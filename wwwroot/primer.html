@@ -297,7 +297,9 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-progress { margin: 0 0 18px; }
 .sim-progress p { color: var(--muted); margin: 0 0 7px; font-size: .89rem; }
 .sim-progress ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.sim-progress li { display: flex; align-items: center; gap: 7px; padding: 7px 8px; margin: 0; color: var(--muted); border-bottom: 2px solid var(--line); font-size: .85rem; line-height: 1.25; }
+.sim-progress li { display: flex; margin: 0; min-width: 0; }
+.sim-progress a { display: flex; align-items: center; gap: 7px; padding: 7px 8px; width: 100%; min-height: 44px; color: var(--muted); border-bottom: 2px solid var(--line); font-size: .85rem; line-height: 1.25; text-decoration: none; }
+.sim-progress a:hover { color: var(--mint); border-color: var(--mint); background: #183b43; }
 .sim-progress li span { display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; width: 23px; height: 23px; flex: none; }
 .sim-progress [aria-current="step"] { border-color: var(--mint); background: #183b43; color: var(--ink); border-radius: 6px 6px 0 0; }
 .sim-progress [aria-current="step"] span { border-color: var(--mint); background: var(--mint); color: #102a22; font-weight: 800; }
@@ -359,12 +361,42 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-saved { color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
 .sim-pick { border: 0; padding: 0; margin: 10px 0 0; min-inline-size: 0; }
 .sim-pick legend { margin-bottom: 3px; font-weight: 700; }
-.sim-stock-note { display: flex; flex-wrap: wrap; gap: 3px 14px; border-inline-start: 3px solid var(--mint); padding: 6px 12px; background: #193540; }
+.sim-panel .sim-stock-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: none; border-inline-start: 3px solid var(--mint); padding: 7px 12px; background: #193540; }
+.sim-dock { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: stretch; }
+.sim-dock h3 { font-size: 1rem; margin: 0 0 6px; }
+.sim-cargo-tray { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-content: start; }
+.sim-cargo-tray h3 { grid-column: 1 / -1; }
+.sim-cargo-card { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 9px; text-align: left; color: var(--ink); background: #193540; border: 1px solid var(--line); border-radius: 7px; cursor: grab; }
+.sim-cargo-card:hover, .sim-cargo-card[aria-pressed="true"] { border-color: var(--mint); background: #214752; }
+.sim-cargo-card:active { cursor: grabbing; }
+.sim-cargo-card small { color: var(--muted); line-height: 1.3; }
+.sim-cargo-count { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; }
+.sim-cargo-count span { display: inline-block; border-radius: 4px; padding: 2px 6px; background: #102630; color: var(--muted); white-space: nowrap; font-size: .84rem; }
+.sim-cargo-count b { color: var(--mint); margin-inline-start: 2px; }
+.sim-cargo-hold { padding: 9px 12px; border: 2px dashed #537784; border-radius: 7px; background: #0d242f; }
+.sim-cargo-target, .sim-cargo-hold:has(.sim-cargo-loaded) { border-color: var(--mint); }
+.sim-cargo-target { background: #214752; }
+.sim-cargo-hold p { margin: 3px 0; }
+.sim-cargo-loaded > p:first-child { color: var(--mint); }
+.sim-flight { display: flex; gap: 12px; align-items: center; color: var(--mint); font-size: .9rem; font-weight: 700; margin-bottom: 12px; }
+.sim-flight-path { position: relative; flex: 1; border-block-end: 1px dashed var(--line); }
+.sim-flight-path svg { position: absolute; inset-block-start: -12px; inset-inline-start: calc(100% - 24px); background: var(--card); }
+@media (prefers-reduced-motion: no-preference) {
+  .sim-cargo-loaded { animation: sim-dock-in .24s ease-out both; }
+  .sim-flight-path svg { animation: sim-flight-out .65s ease-out both; }
+  @keyframes sim-dock-in {
+    from { opacity: .6; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes sim-flight-out {
+    from { inset-inline-start: 0; }
+    to { inset-inline-start: calc(100% - 24px); }
+  }
+}
 .sim-option { display: flex; gap: 10px; align-items: start; border-bottom: 1px solid var(--line); padding: 9px 8px; cursor: pointer; min-height: 44px; }
 .sim-option:hover, .sim-option:has(input:checked) { background: #21414d; }
 .sim-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 .sim-option input { accent-color: var(--mint); margin: 5px 0 0; flex: 0 0 auto; }
-[data-sim-form="launch"] .sim-option > strong { margin-inline-start: auto; white-space: nowrap; color: var(--mint); }
 .sim-option small { display: block; color: var(--muted); font-size: .9rem; margin-top: 2px; }
 .sim-journal-select { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 13px; }
 .sim-journal-select label { display: grid; gap: 4px; max-width: 100%; }
@@ -375,14 +407,13 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 [data-sim-form="custom"] input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
 @media (max-width: 680px) {
   .sim-progress ol { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-  .sim-progress li { justify-content: center; }
-  .sim-progress [aria-current="step"] { grid-column: span 3; }
-  .sim-progress li:not([aria-current]) strong { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  .sim-progress a { justify-content: center; }
+  .sim-progress li:has([aria-current="step"]) { grid-column: span 3; }
+  .sim-progress a:not([aria-current]) strong { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  .sim-dock { grid-template-columns: 1fr; }
 }
 @media (max-width: 460px) {
   .sim-signal { grid-template-columns: 1fr; gap: 4px; }
-  [data-sim-form="launch"] .sim-option { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 9px; }
-  [data-sim-form="launch"] .sim-option > strong { grid-column: 2; margin-inline-start: 0; white-space: normal; }
   .sim-panel th, .sim-panel td { padding-inline: 5px; }
 }
 </style></head><body class="outpost-app"><main data-standalone-primer style="margin-top:24px"></main><script>(() => {

@@ -32,8 +32,8 @@ let view = 'quest';
 let leavePrimer;
 let lastMainRoute = readLocal('outpost-main-route', '#simulator-learn', 'sessionStorage');
 
-const simulatorRoute = /^#simulator(?:-(?:learn|data|explain|scenarios|custom|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
-const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|explain|project|build(?:-[1-4])?))?)$/;
+const simulatorRoute = /^#simulator(?:-(?:learn|data|load|check|explain|scenarios|custom|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
+const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|load|check|explain|project|build(?:-[1-4])?))?)$/;
 const stationRoute = /^#(station|reference|worksheet)-([1-8])$/;
 if (!mainRoute.test(lastMainRoute)) lastMainRoute = '#simulator-learn';
 
@@ -284,7 +284,7 @@ async function runGame(action, message) {
   if (gameSession.busy) return;
   const focus = document.activeElement?.dataset.focus;
   const originRoute = location.hash;
-  const launchStep = originRoute === '#simulator' ? simLaunchStep() : null;
+  const launchStep = ['#simulator', '#simulator-check'].includes(originRoute) ? simLaunchStep() : null;
   gameSession.busy = true;
   gameSession.message = '';
   gameSession.failed = false;
@@ -370,6 +370,7 @@ async function gameAction(action, value) {
       if (action === 'retry') return 'Повтор неожиданно выполнен. Сравните ответы и состояние в журнале.';
       if (action === 'transition' && value === 'launch' && simIsE01(gameSession.game)) {
         rememberSimEvidence('firstLaunch', beforeStock);
+        if (location.hash === '#simulator-load') location.hash = '#simulator-check';
       }
       recordComparison();
       if (['catalog', 'actions'].includes(simulatorScreen()) && view === 'sim') location.hash = '#simulator';
@@ -482,6 +483,7 @@ main.addEventListener('click', event => {
     document.querySelector('#matrix-live').innerHTML = caseDecision(button.dataset.objective);
   }
   if (button.dataset.game) gameAction(button.dataset.game, button.dataset.value);
+  if (button.dataset.cargoPlan) placeSimCargo(button.form, button.dataset.cargoPlan);
   if (button.hasAttribute('data-reset-goal')) {
     simGoal = null;
     saveLocal('outpost-sim-goal', null);
@@ -514,13 +516,12 @@ main.addEventListener('submit', event => {
       if (!customGameError(data)) gameAction('new-custom', data);
     } else if (operation === 'select') {
       gameAction('select', event.target.elements.expeditionId.value);
+    } else if (operation === 'launch') {
+      if (!gameSession.busy && simLaunchStep() === 0 && attemptFor(gameSession.game)?.source) gameAction('transition', 'launch');
     } else {
       const selected = event.target.querySelector('input[name="selection"]:checked');
       if (!selected) return;
-      if (operation === 'launch') {
-        saveAttempt({ source: selected.value });
-        gameAction('transition', 'launch');
-      } else if (operation === 'goal') {
+      if (operation === 'goal') {
         simGoal = { id: gameSession.game.id, choice: selected.value };
         saveLocal('outpost-sim-goal', simGoal);
         renderSimulator();

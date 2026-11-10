@@ -8,6 +8,7 @@ const scenarios = [
   { id: 'free', title: 'Свободная партия', description: 'Самостоятельно выбрать миссии и сравнить стратегии' }
 ];
 const simChapters = ['Получить задание', 'Сравнить запасы', 'Проверить запуск', 'Собрать свой API', 'Проверить новые условия'];
+const simChapterRoutes = ['learn', 'load', 'check', 'explain', 'build-4'];
 const simPair = value => value.fuel + ' / ' + value.rations;
 const simLink = (label, hash, mainAction = false) =>
   '<a class="' + (mainAction ? 'button primary' : 'sim-text-link') + '" href="#simulator' +
@@ -46,7 +47,7 @@ function simulatorScreen() {
 }
 
 function simUsesGame() {
-  return ['run', 'scenarios', 'journal', 'compare', 'catalog', 'actions'].includes(simulatorScreen());
+  return ['run', 'load', 'check', 'scenarios', 'journal', 'compare', 'catalog', 'actions'].includes(simulatorScreen());
 }
 
 function simIsE01(game) {
@@ -63,9 +64,9 @@ function simLaunchStep() {
 
 function simChapterRail(current) {
   return '<nav class="sim-progress" aria-label="Маршрут практики E01"><p>Этап ' + (current + 1) + ' из ' +
-    simChapters.length + '</p><ol>' + simChapters.map((name, index) =>
-      '<li' + (index === current ? ' aria-current="step"' : '') + '><span aria-hidden="true">' + (index + 1) +
-      '</span><strong>' + esc(name) + '</strong></li>').join('') + '</ol></nav>';
+    simChapters.length + ' · Нажмите на этап, чтобы открыть его</p><ol>' + simChapters.map((name, index) =>
+      '<li><a href="#simulator-' + simChapterRoutes[index] + '"' + (index === current ? ' aria-current="step"' : '') +
+      '><span aria-hidden="true">' + (index + 1) + '</span><strong>' + esc(name) + '</strong></a></li>').join('') + '</ol></nav>';
 }
 
 function simPanel(eyebrow, title, contents, action = '', secondary = '', supplement = '') {
@@ -104,11 +105,13 @@ function renderSimulator() {
   else if (screen === 'custom') body = simCustom();
   else if (screen === 'reference') body = simReference();
   else if (screen === 'project') body = simProjectBridge();
-  else if (localFile) body = simPanel('Тренажёр E01', 'Подготовьтесь к рейсу',
+  else if (localFile && screen === 'load') body = simData(localFile);
+  else if (localFile) body = (screen === 'check' ? simChapterRail(2) : '') + simPanel('Тренажёр E01', 'Подготовьтесь к рейсу',
     '<p>Объяснения, данные и инструкция работают в этом файле. Для запросов запустите <code>Start-Outpost.cmd</code> из полного архива и откройте адрес, показанный в окне сервера.</p>',
     simLink('Разобрать запрос', 'learn', true));
   else if (screen === 'scenarios') body = simScenarios();
   else if (screen === 'journal') body = simJournal(game);
+  else if (screen === 'load' || screen === 'check') body = simDockScreen(game, screen);
   else if (browserDemo && ['compare', 'catalog', 'actions'].includes(screen)) body = simPanel('Проект с SQLite',
     'Продолжите на сервере', '<p>Для партий с несколькими миссиями запустите полную сборку. Здесь доступны оба варианта E01.</p>',
     '<a class="button primary" href="https://github.com/OlgaKraven/orbital-outpost#запуск-исходного-проекта">Как запустить проект</a>',
@@ -127,6 +130,8 @@ function renderSimulator() {
     (simUsesGame() || gameSession.busy || gameSession.failed ? gameSession.busy
       ? browserDemo ? 'Выполняем учебную команду…' : 'Ожидаем ответ сервера…' : esc(gameSession.message) : '') + '</div>' + body + '</div>';
   if (screen === 'custom') updateCustomPreview(main.querySelector('[data-sim-form="custom"]'));
+  const dock = main.querySelector('[data-sim-form="launch"]');
+  if (dock) bindSimCargoDrag(dock);
   const animation = main.querySelector('.sim-animation');
   const syncAnimation = () => {
     if (!animation.isConnected) return;
@@ -314,7 +319,93 @@ function simRun(game) {
   return panel;
 }
 
-function simE01(game) {
+function simDockScreen(game, screen) {
+  const checking = screen === 'check';
+  if (gameSession.busy && !gameSession.selected) {
+    return simChapterRail(checking ? 2 : 1) + simPanel('Связь с доком', 'Загружаем рейс', '');
+  }
+  const step = simLaunchStep();
+  if (checking) {
+    return step > 0 ? simE01(game, 2) : simChapterRail(2) + simPanel('Проверка запуска',
+      'Корабль ещё в доке', '<p>Сначала откройте погрузку, укажите ожидаемый груз и запустите рейс. Здесь появится результат запуска и команда повтора.</p>',
+      simLink('Перейти к погрузке', 'load', true));
+  }
+  if (step === 0) return simE01(game, 1);
+  if (step === null) {
+    return simChapterRail(1) + simPanel('Док E01', 'Откройте запасы рейса',
+      '<p>Тренажёр подготовит корабль к вылету и покажет груз, выделенный рейсу, и новую норму штаба.</p>',
+      simButton('Посмотреть запасы рейса', 'new', 'e01'));
+  }
+  const trip = gameSession.selected;
+  const attempt = attemptFor(game);
+  const first = attempt?.firstLaunch;
+  const plans = simCargoPlans(trip, gameSession.missions.find(mission => mission.id === trip.missionId));
+  const chosen = plans.find(plan => plan.id === attempt?.source);
+  const rows = plans.map(plan => [plan.title, plan.cost.fuel, plan.cost.rations]);
+  if (first?.spent) rows.unshift(['Склад до запуска', first.stock.fuel + first.spent.fuel, first.stock.rations + first.spent.rations]);
+  return simChapterRail(1) + simPanel('Док · просмотр', 'Условия вылета',
+    '<p>Рейс уже вылетел. Здесь можно пересмотреть данные, по которым вы делали прогноз.</p>' +
+    table(['Запись', 'Топливо', 'Пайки'], rows) +
+    (chosen ? '<p><strong>Ваш прогноз</strong> · ' + esc(chosen.title) + '</p>' : ''),
+    simLink('К проверке запуска', 'check', true));
+}
+
+function simCargoPlans(trip, mission) {
+  const plans = [{ id: 'snapshot', title: 'Снимок рейса', description: 'Груз, который уже выделили этому кораблю', cost: trip.cost }];
+  if (mission) plans.push({ id: 'catalog', title: 'Текущий каталог', description: 'Новая норма, которую выпустил штаб', cost: mission.cost });
+  return plans;
+}
+
+function simCargoCount(cost) {
+  return '<span class="sim-cargo-count"><span>Топливо <b>' + cost.fuel + '</b></span><span>Пайки <b>' + cost.rations + '</b></span></span>';
+}
+
+function simCargoPreview(stock, plan) {
+  if (!plan) return '<p>Отсек пуст. Нажмите на карточку груза или перетащите её сюда.</p>';
+  const remaining = { fuel: stock.fuel - plan.cost.fuel, rations: stock.rations - plan.cost.rations };
+  const missing = { fuel: Math.max(0, -remaining.fuel), rations: Math.max(0, -remaining.rations) };
+  return '<div class="sim-cargo-loaded"><p><strong>Ваш прогноз · ' + esc(plan.title) + '</strong></p>' + simCargoCount(plan.cost) +
+    (missing.fuel || missing.rations ? '<p>По этой норме не хватило бы груза. Недостача</p>' + simCargoCount(missing) :
+      '<p>На складе осталось бы</p>' + simCargoCount(remaining)) + '</div>';
+}
+
+function placeSimCargo(form, source) {
+  if (!form || gameSession.busy || simLaunchStep() !== 0) return;
+  const { game, selected, missions } = gameSession;
+  const plan = simCargoPlans(selected, missions.find(item => item.id === selected.missionId)).find(item => item.id === source);
+  if (!plan) return;
+  saveAttempt({ source: plan.id });
+  form.querySelectorAll('[data-cargo-plan]').forEach(card =>
+    card.setAttribute('aria-pressed', String(card.dataset.cargoPlan === plan.id)));
+  form.querySelector('[data-cargo-preview]').innerHTML = simCargoPreview(game.inventory.onHand, plan);
+  form.querySelector('button[type="submit"]').disabled = false;
+}
+
+function bindSimCargoDrag(form) {
+  const mime = 'application/x-outpost-cargo';
+  const hold = form.querySelector('[data-cargo-hold]');
+  form.addEventListener('dragstart', event => {
+    const card = event.target.closest('[data-cargo-plan]');
+    if (!card || card.disabled) return;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(mime, card.dataset.cargoPlan);
+    hold.classList.add('sim-cargo-target');
+  });
+  hold.addEventListener('dragover', event => {
+    if (!event.dataTransfer.types.includes(mime)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  });
+  hold.addEventListener('drop', event => {
+    if (!event.dataTransfer.types.includes(mime)) return;
+    event.preventDefault();
+    hold.classList.remove('sim-cargo-target');
+    placeSimCargo(form, event.dataTransfer.getData(mime));
+  });
+  form.addEventListener('dragend', () => hold.classList.remove('sim-cargo-target'));
+}
+
+function simE01(game, chapter) {
   const trip = gameSession.selected;
   if (!trip) return simPanel('Рейс E01', 'Подготовьте рейс',
     simText('Для продолжения создайте исходную учебную партию.'), simButton('Открыть рейс E01', 'new', 'e01'));
@@ -328,23 +419,23 @@ function simE01(game) {
   const recorded = attemptFor(game);
   let panel;
   if (step === 0) {
-    const count = cost => 'Топливо ' + cost.fuel + ' · Пайки ' + cost.rations;
-    const choices = [['snapshot', 'По снимку рейса', 'Груз, который уже выделили этому кораблю', trip.cost]];
-    if (mission) choices.push(['catalog', 'По текущему каталогу', 'Новая норма, которую выпустил штаб', mission.cost]);
-    const prompt = '<form data-sim-form="launch"><fieldset class="sim-pick"><legend>Какую норму, по-вашему, применит станция?</legend>' +
-      choices.map(([source, title, description, cost]) =>
-        '<label class="sim-option"><input type="radio" name="selection" value="' + source +
-        '" required' + (recorded?.source === source ? ' checked' : '') + '><span><b>' + title +
-        '</b><small>' + description + '</small></span><strong>' + count(cost) + '</strong></label>').join('') +
-      '</fieldset><div class="sim-actions"><button class="button primary" type="submit" data-focus="launch-e01"' +
-      (gameSession.busy ? ' disabled' : '') + '>Запустить рейс</button></div></form>';
+    const plans = simCargoPlans(trip, mission);
+    const chosen = plans.find(plan => plan.id === recorded?.source);
+    const prompt = '<form data-sim-form="launch"><div class="sim-dock"><div class="sim-cargo-tray"><h3>Карточки груза</h3>' +
+      plans.map(plan => '<button type="button" class="sim-cargo-card" data-cargo-plan="' + plan.id +
+        '" draggable="true" aria-pressed="' + (chosen === plan) + '"' + (gameSession.busy ? ' disabled' : '') +
+        '><strong>' + esc(plan.title) + '</strong><small>' + esc(plan.description) + '</small>' + simCargoCount(plan.cost) + '</button>').join('') +
+      '</div><section class="sim-cargo-hold" data-cargo-hold aria-labelledby="sim-cargo-title"><h3 id="sim-cargo-title">Грузовой отсек</h3>' +
+      '<div role="status" data-cargo-preview>' + simCargoPreview(game.inventory.onHand, chosen) + '</div></section></div>' +
+      '<div class="sim-actions"><button class="button primary" type="submit" data-focus="launch-e01"' +
+      (!chosen || gameSession.busy ? ' disabled' : '') + '>Запустить рейс</button></div></form>';
     const sources = custom ? '<p>Значения взяты из вашей формы. Награда по снимку — ' +
       trip.rewardCreditsSnapshot + ', по текущему каталогу — ' + mission.rewardCredits + '.</p>' : '<p class="note">Склад и согласованные условия — ' + sourceLinks('С1') +
       '. Текущая карточка — ' + (transfer ? '<a href="scenarios.json">scenarios.json</a>, набор <code>launch-transfer</code>, поле <code>catalogCost</code>' : sourceLinks('С2')) +
       '.</p>';
     panel = simPanel(label, 'Сколько корабль возьмёт со склада?',
-      '<p>Выберите один вариант и нажмите «Запустить рейс». Тренажёр покажет, сколько топлива и пайков ушло на самом деле.</p>' +
-      '<p class="sim-stock-note"><strong>Склад станции</strong><span>' + count(game.inventory.onHand) + '</span></p>' + prompt, '', '',
+      '<p>Положите в отсек карточку с грузом, который, по-вашему, возьмёт корабль. Запасы изменятся только после запуска рейса.</p>' +
+      '<p class="sim-stock-note"><strong>Склад станции</strong>' + simCargoCount(game.inventory.onHand) + '</p>' + prompt, '', '',
       simDetail('Откуда взялись числа', sources +
         '<p>Груз выделили при подготовке рейса. Он пока на складе. Тренажёр создал отдельную учебную партию, чтобы вы могли увидеть, что изменится после запуска.</p>'));
   } else if (step === 1) {
@@ -358,7 +449,9 @@ function simE01(game) {
         ? 'Вы выбрали новую норму. Корабль взял груз, который ему выделили до её появления.' :
         'Ваш прогноз совпал с результатом. Корабль взял груз, который ему выделили при подготовке.') + '</p>' : '';
     panel = simPanel(label, 'Корабль вылетел. Что даст повтор?',
-      comparison + changes +
+      '<div class="sim-flight" aria-hidden="true"><span>Док</span><span class="sim-flight-path">' +
+      '<svg viewBox="0 0 32 32" width="24" height="24"><path d="M29 16 4 5l6 11-6 11 25-11ZM10 16h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</span><span>В полёте</span></div>' + comparison + changes +
       '<p>Представьте, что сообщение об успешном запуске задержалось и диспетчер нажал кнопку ещё раз. Проверьте, убавится ли запас после такой команды.</p>',
       simButton('Повторить запуск', 'retry', 'launch'), journal);
   } else {
@@ -386,7 +479,7 @@ function simE01(game) {
       journal + (transfer || custom ? '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол</button>' : ''),
       checked ? simDetail('Какие ответы записаны в журнале', '<p>Первый ответ — <strong>200 OK</strong>. Повтор — <strong>409 Conflict</strong>, то есть команда не подходит к текущему состоянию. В истории один переход в «В полёте».</p>' + simEvents(trip)) : '');
   }
-  return simChapterRail(transfer ? 4 : step === 0 ? 1 : 2) + panel;
+  return simChapterRail(chapter ?? (transfer ? 4 : step === 0 ? 1 : 2)) + panel;
 }
 
 function simProjectBridge() {
@@ -664,6 +757,6 @@ function simBuild(step) {
       : simButton('Проверить перенос в тренажёре', 'new', 'launch-transfer');
   const protocol = current === 4 ? simLink('К итогам проекта', 'project') +
     '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол и листы</button>' : '';
-  return simChapterRail(3) + simPanel('04 · Собственный API · шаг ' + current + ' из ' + steps.length,
+  return simChapterRail(current === 4 ? 4 : 3) + simPanel('04 · Собственный API · шаг ' + current + ' из ' + steps.length,
     title, contents, next, current > 1 ? simLink('Предыдущий шаг', 'build-' + (current - 1)) + protocol : simLink('К разбору кнопки запуска', 'explain'));
 }
