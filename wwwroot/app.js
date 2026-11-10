@@ -32,8 +32,8 @@ let view = 'quest';
 let leavePrimer;
 let lastMainRoute = readLocal('outpost-main-route', '#simulator-learn', 'sessionStorage');
 
-const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|custom|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
-const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|project|build(?:-[1-4])?))?)$/;
+const simulatorRoute = /^#simulator(?:-(?:learn|data|explain|scenarios|custom|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
+const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|explain|project|build(?:-[1-4])?))?)$/;
 const stationRoute = /^#(station|reference|worksheet)-([1-8])$/;
 if (!mainRoute.test(lastMainRoute)) lastMainRoute = '#simulator-learn';
 
@@ -382,7 +382,10 @@ async function gameAction(action, value) {
           simChecked = { id: gameSession.game.id, tripId: gameSession.selected.id,
             type: action === 'retry' ? 'repeat' : 'replacement' };
           saveLocal('outpost-sim-checked', simChecked, partyStorage);
-          if (action === 'retry' && simIsE01(gameSession.game)) rememberSimEvidence('repeatLaunch');
+          if (action === 'retry' && simIsE01(gameSession.game)) {
+            rememberSimEvidence('repeatLaunch');
+            return 'Проверка повтора завершена.';
+          }
           return 'HTTP 409 · состояние после команды совпало с исходным.';
         }
       }

@@ -317,6 +317,9 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-sources small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; line-height: 1.35; }
 .sim-sources th:not(:first-child), .sim-sources td { width: 15%; text-align: center; }
 .sim-actions { display: flex; flex-wrap: wrap; gap: 9px 17px; align-items: center; margin-top: 15px; }
+.sim-detail { margin-top: 18px; padding-top: 9px; border-top: 1px solid var(--line); }
+.sim-detail summary { color: var(--muted); cursor: pointer; width: fit-content; }
+.sim-detail[open] summary { color: var(--mint); }
 .sim-text-link { color: var(--muted); font-size: .92rem; text-underline-offset: 3px; }
 .sim-text-link:hover { color: var(--mint); }
 .sim-signal { list-style: none; padding: 0; margin-block: 10px 15px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -356,10 +359,12 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-saved { color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
 .sim-pick { border: 0; padding: 0; margin: 10px 0 0; min-inline-size: 0; }
 .sim-pick legend { margin-bottom: 3px; font-weight: 700; }
+.sim-stock-note { display: flex; flex-wrap: wrap; gap: 3px 14px; border-inline-start: 3px solid var(--mint); padding: 6px 12px; background: #193540; }
 .sim-option { display: flex; gap: 10px; align-items: start; border-bottom: 1px solid var(--line); padding: 9px 8px; cursor: pointer; min-height: 44px; }
 .sim-option:hover, .sim-option:has(input:checked) { background: #21414d; }
 .sim-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 .sim-option input { accent-color: var(--mint); margin: 5px 0 0; flex: 0 0 auto; }
+[data-sim-form="launch"] .sim-option > strong { margin-inline-start: auto; white-space: nowrap; color: var(--mint); }
 .sim-option small { display: block; color: var(--muted); font-size: .9rem; margin-top: 2px; }
 .sim-journal-select { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 13px; }
 .sim-journal-select label { display: grid; gap: 4px; max-width: 100%; }
@@ -376,6 +381,8 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 }
 @media (max-width: 460px) {
   .sim-signal { grid-template-columns: 1fr; gap: 4px; }
+  [data-sim-form="launch"] .sim-option { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 9px; }
+  [data-sim-form="launch"] .sim-option > strong { grid-column: 2; margin-inline-start: 0; white-space: normal; }
   .sim-panel th, .sim-panel td { padding-inline: 5px; }
 }
 </style></head><body class="document"><header><p class="kicker">Орбитальный форпост</p><h1>Первый прототип API · Рейс E01</h1><p>Практика для первого знакомства с Minimal API и JSON.</p><nav aria-label="Материалы"><a class="button" href="student-guide.html">Задание</a><a class="button" href="launch.html">Первый API · E01</a><a class="button" href="brief.html">Досье</a><a class="button" href="primer.html">Вводный тренажёр</a><a class="button" href="workbook.html">Рабочие листы</a></nav></header><article class="panel"><section id="briefing"><h2>1. Прочитать донесение</h2><p>Рейс E01 уже подготовлен для ремонта антенны. Штаб обновил карточку M01 в каталоге. Задача — написать обработчик запуска и проверить, какое количество будет списано.</p><div class="table-wrap"><table><thead><tr><th scope="col">Источник</th><th scope="col">Топливо</th><th scope="col">Пайки</th></tr></thead><tbody><tr><td>Физический запас</td><td>10</td><td>5</td></tr><tr><td>Согласованные условия E01</td><td>6</td><td>2</td></tr><tr><td>Текущий каталог</td><td>7</td><td>3</td></tr><tr><td>Каталог в самостоятельной проверке</td><td>8</td><td>4</td></tr></tbody></table></div><p>В этой первой практике сервер обслуживает один рейс. Данные хранятся в памяти. Перезапуск возвращает начальное состояние. В полном проекте по карте партии и история сохраняются в SQLite.</p><p><a class="button" href="primer.html#e01">Открыть анимацию запуска E01</a></p></section><section id="start"><h2>2. Запустить заготовку</h2><p>Распаковать студенческий комплект. Открыть PowerShell в каталоге <code>first-api</code>. Для запуска нужен .NET SDK 10.</p><pre><code>dotnet run --no-launch-profile --urls http://localhost:5201</code></pre><p>Открыть <a href="http://localhost:5201/api/game">состояние рейса в браузере</a>. Найти <code>stock</code>, <code>agreedCost</code>, <code>currentCost</code>, <code>status</code> и <code>history</code>. Записать прогноз остатков. Остановить сервер сочетанием Ctrl+C перед правкой файла.</p></section><section id="launch"><h2>3. Написать команду запуска</h2><p>В заготовке уже есть GET и тип <code>LaunchRequest</code>. Добавить перед <code>app.Run()</code> обработчик <code>POST /api/expeditions/E01/transitions</code>. Для сравнения ниже показана команда открытия шлюза. Она проверяет имя команды и текущее состояние до изменения данных.</p><pre><code>var hatchOpen = false;
