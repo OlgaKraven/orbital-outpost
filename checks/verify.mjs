@@ -115,9 +115,42 @@ try {
   const transferCatalog = (await api('/missions', 200, { game: transfer.id })).body;
   assert.deepEqual(transferCatalog.find(mission => mission.id === 'M01'), republished);
   assert.deepEqual((await detail(transfer.id, transfer.activeExpedition.id)).cost, { fuel: 6, rations: 2 });
+  const customInputs = {
+    stock: { fuel: 14, rations: 8 },
+    snapshot: { cost: { fuel: 5, rations: 3 }, rewardCredits: 120 },
+    catalog: { cost: { fuel: 11, rations: 7 }, rewardCredits: 175 }
+  };
+  const createCustom = (payload, status = 200) => api('/demo/games/custom', status, { method: 'POST', payload });
+  assert.equal((await createCustom({ ...customInputs, stock: { fuel: 14, rations: 2 } }, 400)).body.code,
+    'snapshot_exceeds_stock');
+  assert.equal((await createCustom({ ...customInputs, snapshot: { cost: { fuel: 5 }, rewardCredits: 120 } }, 400)).body.code,
+    'invalid_custom_values');
+  await createCustom({ ...customInputs, stock: { fuel: '14', rations: 8 } }, 400);
+  const { body: custom } = await createCustom(customInputs);
+  const customTrip = custom.activeExpedition.id;
+  assert.equal(custom.scenarioId, 'custom');
+  assert.deepEqual(custom.inventory, { onHand: customInputs.stock, reserved: customInputs.snapshot.cost,
+    available: { fuel: 9, rations: 5 } });
+  const customCatalog = (await api('/missions', 200, { game: custom.id })).body.find(mission => mission.id === 'M01');
+  assert.equal(customCatalog.revision, 2);
+  assert.deepEqual(customCatalog.cost, customInputs.catalog.cost);
+  assert.equal(customCatalog.rewardCredits, 175);
+  const customSnapshot = await detail(custom.id, customTrip);
+  assert.deepEqual(customSnapshot.cost, customInputs.snapshot.cost);
+  assert.equal(customSnapshot.rewardCreditsSnapshot, 120);
+  await transition(custom.id, customTrip, 'launch');
+  const customLaunched = await state(custom.id);
+  assert.deepEqual(customLaunched.inventory.onHand, { fuel: 9, rations: 5 });
+  await transition(custom.id, customTrip, 'launch', 409);
+  assert.deepEqual(await state(custom.id), customLaunched);
+  await transition(custom.id, customTrip, 'complete');
+  const customCompleted = await state(custom.id);
+  assert.equal(customCompleted.credits, 120);
   const main = await newGame();
   const catalog = (await api('/missions', 200, { game: main })).body;
   assert.deepEqual(catalog.map(mission => mission.id), ['M01', 'M02', 'M03']);
+  assert.deepEqual(catalog[0].cost, { fuel: 6, rations: 2 });
+  assert.equal(catalog[0].rewardCredits, 100);
   await api('/game', 400);
   await api('/game', 404, { game: '00000000-0000-0000-0000-000000000000' });
   await prepare(main, 'M99', 404);
@@ -185,6 +218,7 @@ try {
   await stop();
   await start();
   assert.deepEqual(await state(main), combined);
+  assert.deepEqual(await state(custom.id), customCompleted);
   assert.deepEqual(await detail(main, first.id), done);
   process.stdout.write('Пройдено ' + (checks + caseChecks) + ' HTTP-проверок. Подтверждены обе ветви донесения, дефицит, граница, конкуренция и перезапуск.\n');
 } catch (error) {

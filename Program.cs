@@ -46,6 +46,7 @@ app.MapGet("/study/fixtures", () => TypedResults.Ok(new { seed = seedSource, sce
 
 var api = app.MapGroup("/api");
 api.MapPost("/demo/games", (string? scenario, GameStore games) => TypedResults.Ok(games.NewGame(scenario)));
+api.MapPost("/demo/games/custom", (CustomGameRequest request, GameStore games) => TypedResults.Ok(games.NewCustomGame(request)));
 api.MapPost("/demo/catalog-revision", ([FromHeader(Name = "X-Game-Id")] Guid gameId, GameStore games) =>
     TypedResults.Ok(games.ReviseCatalog(gameId)));
 api.MapGet("/missions", ([FromHeader(Name = "X-Game-Id")] Guid gameId, GameStore games) =>
@@ -71,5 +72,9 @@ api.MapPost("/expeditions/{id:guid}/replacements", ([FromHeader(Name = "X-Game-I
 app.Run();
 
 record PrepareRequest(string? MissionId);
+record CustomGameRequest(ResourceInput? Stock, MissionTermsInput? Snapshot, MissionTermsInput? Catalog);
+record ResourceInput([property: JsonNumberHandling(JsonNumberHandling.Strict)] int? Fuel,
+    [property: JsonNumberHandling(JsonNumberHandling.Strict)] int? Rations);
+record MissionTermsInput(ResourceInput? Cost, [property: JsonNumberHandling(JsonNumberHandling.Strict)] int? RewardCredits);
 record TransitionRequest(string? Action);
 record ReplacementRequest([property: JsonNumberHandling(JsonNumberHandling.Strict)] int? ExpectedCatalogRevision);

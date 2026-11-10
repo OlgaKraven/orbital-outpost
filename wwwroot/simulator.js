@@ -48,7 +48,7 @@ function simUsesGame() {
 }
 
 function simIsE01(game) {
-  return game?.scenarioId === 'launch-transfer' || (game && simTrack?.id === game.id && simTrack.exercise === 'e01');
+  return ['launch-transfer', 'custom'].includes(game?.scenarioId) || (game && simTrack?.id === game.id && simTrack.exercise === 'e01');
 }
 
 function simChapterRail(current) {
@@ -75,7 +75,8 @@ function renderSimulator() {
   else if (screen === 'data') body = simData(localFile);
   else if (screen === 'materials') body = simMaterials();
   else if (screen === 'dossier') body = simDossier();
-  else if (screen === 'api') body = simPanel('Работа с API', 'Проверьте источники данных на сервере', apiSourceGuide(), simReturn());
+  else if (screen === 'api') body = simPanel('Работа с API', 'Проверьте источники данных на сервере', apiSourceGuide(), simReturn(), simLink('Свои данные', 'custom'));
+  else if (screen === 'custom') body = simCustom();
   else if (screen === 'reference') body = simReference();
   else if (screen === 'project') body = simProjectBridge();
   else if (localFile) body = simPanel('Тренажёр E01', 'Подготовьтесь к рейсу',
@@ -100,6 +101,7 @@ function renderSimulator() {
     '<div id="sim-message" class="sim-status' + (gameSession.failed ? ' sim-status-error' : '') + '" role="status" tabindex="-1">' +
     (simUsesGame() || gameSession.busy || gameSession.failed ? gameSession.busy
       ? browserDemo ? 'Выполняем учебную команду…' : 'Ожидаем ответ сервера…' : esc(gameSession.message) : '') + '</div>' + body + '</div>';
+  if (screen === 'custom') updateCustomPreview(main.querySelector('[data-sim-form="custom"]'));
   const animation = main.querySelector('.sim-animation');
   animation?.addEventListener('toggle', () => {
     if (!animation.isConnected) return;
@@ -112,7 +114,7 @@ function simMaterials() {
   return simPanel('Учебные материалы', 'Один комплект для практики',
     '<p>В архиве — данные, рабочие листы, заготовки C# и проверка E01. Объяснения и эталон доступны в этом тренажёре.</p>',
     '<a class="button primary" href="student-kit.zip" download>Скачать комплект студента</a>',
-    simLink('Досье и данные', 'dossier') + simLink('Эталон проверки', 'reference') + simLink('Запросы к серверу', 'api') +
+    simLink('Досье и данные', 'dossier') + simLink('Эталон проверки', 'reference') + simLink('Запросы к серверу', 'api') + simLink('Свои данные', 'custom') +
       '<a class="sim-text-link" href="' + esc(lastMainRoute) + '">Вернуться к шагу</a>');
 }
 
@@ -149,7 +151,8 @@ function simOrientation() {
     '<div class="sim-code-note"><p><strong>Тело команды запуска</strong> содержит поле <code>action</code> со строковым значением <code>launch</code>.</p>' +
     simCode('{ "action": "launch" }') + '</div>' + simAnimation() +
     (browserDemo ? '<p class="note">Здесь вы проверяете правило в учебной модели в браузере. В разделе «Собственный API» вы запустите C# и проверите реальные HTTP-запросы.</p>' : ''),
-    localFile ? simLink('Разобрать данные', 'data', true) : simButton('Открыть исходные данные E01', 'new', 'e01'));
+    localFile ? simLink('Разобрать данные', 'data', true) : simButton('Открыть исходные данные E01', 'new', 'e01'),
+    simLink('Свои данные', 'custom'));
 }
 
 function simData(localFile) {
@@ -271,9 +274,10 @@ function simE01(game) {
     simText('Для продолжения создайте исходную учебную партию.'), simButton('Открыть рейс E01', 'new', 'e01'));
   const mission = gameSession.missions.find(item => item.id === trip.missionId);
   const transfer = game.scenarioId === 'launch-transfer';
+  const custom = game.scenarioId === 'custom';
   const checked = simChecked?.id === game.id && simChecked.tripId === trip.id && simChecked.type === 'repeat';
   const step = trip.status === 'prepared' ? 0 : trip.status === 'inFlight' && !checked ? 1 : 2;
-  const label = transfer ? 'Рейс E01 · изменённый каталог 8/4' : 'Рейс E01 · исходный каталог 7/3';
+  const label = custom ? 'Рейс E01 · свои данные' : transfer ? 'Рейс E01 · изменённый каталог 8/4' : 'Рейс E01 · исходный каталог 7/3';
   const journal = simLink('Журнал и ответы HTTP', 'journal');
   const recorded = attemptFor(game);
   let panel;
@@ -287,9 +291,10 @@ function simE01(game) {
       (gameSession.busy ? ' disabled' : '') + '>Запустить рейс</button>' + simLink('К объяснению запроса', 'learn') + '</div></form>';
     panel = simPanel(label, 'Предскажите, что спишет сервер',
       simText('Штаб обновил M01, когда рейс уже был подготовлен. В таблице показаны три записи, которые видит диспетчер.') +
-      simTripFacts(game, trip, mission) + '<p class="note">Склад и согласованные условия — ' + sourceLinks('С1') +
+      simTripFacts(game, trip, mission) + (custom ? '<p class="note">Значения получены из вашего запроса. Награда за рейс по снимку — ' +
+      trip.rewardCreditsSnapshot + ', по текущему каталогу — ' + mission.rewardCredits + '.</p>' : '<p class="note">Склад и согласованные условия — ' + sourceLinks('С1') +
       '. Текущая карточка — ' + (transfer ? '<a href="scenarios.json">scenarios.json</a>, набор <code>launch-transfer</code>, поле <code>catalogCost</code>' : sourceLinks('С2')) +
-      '. <a href="#simulator-build">Поля собственного API E01</a></p>' + prompt);
+      '. <a href="#simulator-build">Поля собственного API E01</a></p>') + prompt);
   } else if (step === 1) {
     const result = recorded?.firstLaunch?.spent;
     const explanation = result ? '<p class="sim-observation"><strong>Списание (топливо / пайки) — ' + simPair(result) +
@@ -305,7 +310,7 @@ function simE01(game) {
       : '<p>Рейс имеет статус <strong>' + esc(statuses[trip.status] ?? trip.status) + '</strong>. Для проверки двух запусков можно начать свежую партию.</p>';
     const observed = '<div class="sim-result"><p><strong>Физический остаток · ' +
       simPair(game.inventory.onHand) + '</strong></p>' + simEvents(trip) + '</div>';
-    const prediction = (transfer ? simNotebook.transferPrediction : simNotebook.prediction)?.trim();
+    const prediction = custom ? null : (transfer ? simNotebook.transferPrediction : simNotebook.prediction)?.trim();
     const evidence = transfer ? table(['Каталог', 'Первый запуск', 'Повтор', 'Остаток после повтора'],
       [['7/3', completedE01('catalog73')], ['8/4', completedE01('catalog84')]].map(([name, attempt]) => [
         name, attempt?.firstLaunch?.http ?? '—', attempt?.repeatLaunch?.http ?? '—',
@@ -313,14 +318,16 @@ function simE01(game) {
       ])) : '';
     panel = simPanel(label, 'Сверьте прогноз с журналом', checkText + observed +
       (prediction ? '<p class="sim-saved"><strong>Мой прогноз.</strong> ' + esc(prediction) + '</p>' : '') + evidence,
-      transfer ? simLink('К итогам проекта', 'project', true) : simLink('Написать свой обработчик', 'build', true),
-      journal + (transfer ? '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол</button>' : ''));
+      custom ? simLink('Изменить свои данные', 'custom', true) :
+        transfer ? simLink('К итогам проекта', 'project', true) : simLink('Написать свой обработчик', 'build', true),
+      journal + (transfer || custom ? '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол</button>' : ''));
   }
   return simChapterRail(transfer ? 4 : step === 0 ? 1 : 2) + panel;
 }
 
 function simProjectBridge() {
-  const rows = [['7/3', completedE01('catalog73')], ['8/4', completedE01('catalog84')]].flatMap(([catalog, observed]) =>
+  const rows = [['7/3', completedE01('catalog73')], ['8/4', completedE01('catalog84')],
+    ['Свои данные', completedE01('catalogCustom')]].flatMap(([catalog, observed]) =>
     observed ? [[catalog, observed.firstLaunch.http, observed.repeatLaunch.http,
       simPair(observed.repeatLaunch.stock)]] : []);
   const studentApi = simNotebook.studentApi ?? {};
@@ -360,7 +367,73 @@ function simScenarios() {
     simPicker('Данные для следующего рейса', available.map(item => ({ value: item.id, title: item.title,
       description: item.description, checked: item.id === current })), 'new', 'Открыть сценарий') +
     (browserDemo ? '<p class="note">Сценарии замены и нескольких рейсов доступны в полной версии. ' +
-      '<a href="https://github.com/OlgaKraven/orbital-outpost#запуск-исходного-проекта">Как запустить проект</a></p>' : ''));
+      '<a href="https://github.com/OlgaKraven/orbital-outpost#запуск-исходного-проекта">Как запустить проект</a></p>' : '') +
+    '<p>Чтобы проверить свои числовые значения, ' + simLink('откройте «Свои данные»', 'custom') + '.</p>');
+}
+
+const customValueLimit = 1_000_000;
+
+function customGameError(data) {
+  const valid = (value, minimum) => Number.isInteger(value) && value >= minimum && value <= customValueLimit;
+  for (const [label, pair, minimum] of [['Склад', data?.stock, 0], ['Снимок рейса', data?.snapshot?.cost, 1],
+    ['Новая карточка каталога', data?.catalog?.cost, 1]]) {
+    if (!valid(pair?.fuel, minimum) || !valid(pair?.rations, minimum)) {
+      return { code: 'invalid_custom_values', title: label + ' — укажите целые количества от ' + minimum + ' до 1 000 000.' };
+    }
+  }
+  if (!valid(data.snapshot.rewardCredits, 0) || !valid(data.catalog.rewardCredits, 0)) {
+    return { code: 'invalid_custom_values', title: 'Укажите целые награды от 0 до 1 000 000.' };
+  }
+  if (data.snapshot.cost.fuel > data.stock.fuel || data.snapshot.cost.rations > data.stock.rations) {
+    return { code: 'snapshot_exceeds_stock', title: 'Склад должен покрывать снимок подготовленного рейса.' };
+  }
+  return null;
+}
+
+function customFormData(form) {
+  const number = name => {
+    const value = form.elements.namedItem(name).valueAsNumber;
+    return Number.isFinite(value) ? value : null;
+  };
+  const pair = prefix => ({ fuel: number(prefix + '.fuel'), rations: number(prefix + '.rations') });
+  const terms = name => ({ cost: pair(name + '.cost'), rewardCredits: number(name + '.rewardCredits') });
+  return { stock: pair('stock'), snapshot: terms('snapshot'), catalog: terms('catalog') };
+}
+
+function updateCustomPreview(form) {
+  const data = customFormData(form);
+  const error = customGameError(data);
+  const available = error ? null : { fuel: data.stock.fuel - data.snapshot.cost.fuel,
+    rations: data.stock.rations - data.snapshot.cost.rations };
+  form.querySelector('[data-custom-preview]').textContent = error?.title ??
+    'После подготовки доступно ' + simPair(available) + ' (топливо / пайки). Резерв по снимку — ' + simPair(data.snapshot.cost) + '.';
+  form.querySelector('[data-custom-json]').textContent = JSON.stringify(data, null, 2);
+  form.querySelectorAll('button').forEach(button => { button.disabled = Boolean(error) || gameSession.busy; });
+}
+
+function simCustom() {
+  const draft = customDraft;
+  const input = (name, label, value, minimum) => '<label>' + label + '<input type="number" name="' + name +
+    '" value="' + esc(value ?? '') + '" min="' + minimum + '" max="' + customValueLimit + '" step="1" required></label>';
+  const group = (key, title, values, hasReward = false) => {
+    const prefix = hasReward ? key + '.cost' : key;
+    const cost = hasReward ? values.cost : values;
+    const minimum = hasReward ? 1 : 0;
+    return '<fieldset><legend>' + title + '</legend>' + input(prefix + '.fuel', 'Топливо', cost.fuel, minimum) +
+      input(prefix + '.rations', 'Пайки', cost.rations, minimum) +
+      (hasReward ? input(key + '.rewardCredits', 'Награда, кредиты', values.rewardCredits, 0) : '') + '</fieldset>';
+  };
+  return simPanel('Практика E01', 'Соберите сценарий из своих данных',
+    '<p>Задайте числа для M01. Склад должен покрывать уже подготовленный рейс. Условия новой карточки могут превышать склад.</p>' +
+    '<form data-sim-form="custom">' + group('stock', '1. Склад', draft.stock) +
+    group('snapshot', '2. Снимок подготовленного рейса', draft.snapshot, true) +
+    group('catalog', '3. Текущая карточка каталога', draft.catalog, true) +
+    '<p class="sim-observation" data-custom-preview aria-live="polite"></p>' +
+    '<details open><summary>Тело запроса · POST /api/demo/games/custom</summary><pre><code data-custom-json></code></pre></details>' +
+    '<div class="sim-actions">' + (location.protocol === 'file:' ? '' : '<button type="submit" class="button primary">Создать партию из моих данных</button>') +
+    '<button type="button" class="button" data-export-custom>Скачать JSON запроса</button>' + simLink('Готовые сценарии', 'scenarios') +
+    '</div></form><p class="note">Для прогона скачанного JSON на локальном сервере используйте команду ниже.</p>' +
+    simCode('Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5191/api/demo/games/custom -ContentType application/json -InFile ./outpost-scenario.json'));
 }
 
 function simMissionAvailable(game, mission) {

@@ -56,6 +56,8 @@ GitHub Actions запускает сборку и проверку HTTP при �
 
 GET /study/fixtures возвращает исходные JSON из `data/seed.json` и `data/scenarios.json` без создания партии. Для состояния выбранного сценария сначала выполните POST /api/demo/games?scenario=briefing, затем передавайте возвращённый id в заголовке X-Game-Id. Без scenario создаётся свободная партия. Для атомарной замены используется POST /api/expeditions/{id}/replacements с expectedCatalogRevision. [Пример проверки источников](wwwroot/student-guide.html#api-practice) · [Контракт OpenAPI](wwwroot/openapi.json).
 
+В разделе [«Свои данные»](https://olgakraven.github.io/orbital-outpost/#simulator-custom) можно задать склад, снимок рейса и текущую карточку M01. Форма создаёт отдельную партию или скачивает JSON для `POST /api/demo/games/custom`. Тело запроса и результат запуска сохраняются в протоколе E01.
+
 ## Запуск на отдельном сервере
 
 Использовать опубликованный каталог run и установленный ASP.NET Core Runtime 10. Из каталога run выполнить `dotnet OrbitalOutpost.dll --urls http://127.0.0.1:5191 --GameDatabase /absolute/persistent/path/outpost.db`. Передать приложению каталог с правом записи и сохранять этот файл между запусками. Для выдачи через существующий сервер использовать проксирование на указанный локальный адрес. Учебные партии разделены по идентификатору, рабочие листы хранятся в браузере и выгружаются в JSON. Готовая сборка рассчитана на учебный показ в доверенной среде.

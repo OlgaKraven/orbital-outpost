@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 
 sealed class GameStore(string databasePath, string schemaPath, Seed seed, CaseFixtures fixtures)
 {
+    private const int CustomValueLimit = 1_000_000;
     private readonly string connectionString = new SqliteConnectionStringBuilder
     {
         DataSource = Path.GetFullPath(databasePath),
@@ -44,19 +45,57 @@ sealed class GameStore(string databasePath, string schemaPath, Seed seed, CaseFi
     private static string[] Columns(SqliteTransaction transaction, string tableInfo) =>
         Query(transaction, tableInfo, row => row.GetString(1));
 
-    public GameDto NewGame(string? scenarioId) => Write(transaction =>
+    public GameDto NewGame(string? scenarioId)
     {
         var scenario = scenarioId is null or "free"
             ? new CaseScenario("free", "Свободная партия", new(seed.Fuel, seed.Rations), null, false)
             : fixtures.Scenarios.SingleOrDefault(item => item.Id == scenarioId)
                 ?? throw Fault(400, "invalid_scenario", "Учебный сценарий не найден.");
+        var revision = scenario.ApplyRevision
+            ? fixtures.Revision with { Cost = scenario.CatalogCost ?? fixtures.Revision.Cost }
+            : null;
+        return CreateGame(scenario.Id, scenario.Stock, seed.Missions, scenario.PrepareMissionId, revision);
+    }
+
+    public GameDto NewCustomGame(CustomGameRequest request)
+    {
+        var stock = ReadCustomResources(request.Stock, 0, "Склад");
+        var original = seed.Missions.Single(mission => mission.Id == fixtures.Revision.Id);
+        var snapshot = ReadCustomTerms(original, request.Snapshot, "Снимок рейса");
+        var catalog = ReadCustomTerms(fixtures.Revision, request.Catalog, "Новая карточка каталога");
+        if (snapshot.Cost.Fuel > stock.Fuel || snapshot.Cost.Rations > stock.Rations)
+            throw Fault(400, "snapshot_exceeds_stock", "Склад должен покрывать снимок подготовленного рейса.");
+
+        var missions = seed.Missions.Select(mission => mission.Id == snapshot.Id ? snapshot : mission);
+        return CreateGame("custom", stock, missions, snapshot.Id, catalog);
+    }
+
+    private static Quantities ReadCustomResources(ResourceInput? input, int minimum, string label)
+    {
+        if (input?.Fuel is not int fuel || input.Rations is not int rations ||
+            fuel < minimum || fuel > CustomValueLimit || rations < minimum || rations > CustomValueLimit)
+            throw Fault(400, "invalid_custom_values", $"{label}: укажите целые количества от {minimum} до {CustomValueLimit}.");
+        return new(fuel, rations);
+    }
+
+    private static MissionDto ReadCustomTerms(MissionDto template, MissionTermsInput? input, string label)
+    {
+        var cost = ReadCustomResources(input?.Cost, 1, label);
+        if (input?.RewardCredits is not int reward || reward < 0 || reward > CustomValueLimit)
+            throw Fault(400, "invalid_custom_values", $"{label}: укажите целую награду от 0 до {CustomValueLimit}.");
+        return template with { Cost = cost, RewardCredits = reward };
+    }
+
+    private GameDto CreateGame(string scenarioId, Quantities stock, IEnumerable<MissionDto> missions,
+        string? prepareMissionId, MissionDto? revision) => Write(transaction =>
+    {
         var id = Guid.NewGuid();
         Execute(transaction, "INSERT INTO Player (Id, CreatedAtUtc, ScenarioId) VALUES ($id, $at, $scenario)",
-            ("$id", id), ("$at", Now()), ("$scenario", scenario.Id));
+            ("$id", id), ("$at", Now()), ("$scenario", scenarioId));
         Execute(transaction, """
             INSERT INTO StockItem VALUES ($id, 'fuel', $fuel), ($id, 'rations', $rations)
-            """, ("$id", id), ("$fuel", scenario.Stock.Fuel), ("$rations", scenario.Stock.Rations));
-        foreach (var mission in seed.Missions)
+            """, ("$id", id), ("$fuel", stock.Fuel), ("$rations", stock.Rations));
+        foreach (var mission in missions)
         {
             Execute(transaction, """
                 INSERT INTO Mission (PlayerId, Id, Title, RewardCredits, Revision)
@@ -67,10 +106,10 @@ sealed class GameStore(string databasePath, string schemaPath, Seed seed, CaseFi
                 ("$reward", mission.RewardCredits), ("$revision", mission.Revision),
                 ("$fuel", mission.Cost.Fuel), ("$rations", mission.Cost.Rations));
         }
-        if (scenario.PrepareMissionId is { } missionId)
+        if (prepareMissionId is { } missionId)
             AddExpedition(transaction, id, FindMission(transaction, id, missionId));
-        if (scenario.ApplyRevision)
-            ApplyCatalogRevision(transaction, id, scenario.CatalogCost);
+        if (revision is not null)
+            ApplyCatalogRevision(transaction, id, revision);
         return ReadGame(transaction, id);
     });
 
@@ -160,20 +199,19 @@ sealed class GameStore(string databasePath, string schemaPath, Seed seed, CaseFi
         RequireGame(transaction, playerId);
         var current = FindMission(transaction, playerId, fixtures.Revision.Id);
         if (current.Revision >= fixtures.Revision.Revision) return current;
-        ApplyCatalogRevision(transaction, playerId);
+        ApplyCatalogRevision(transaction, playerId, fixtures.Revision);
         return FindMission(transaction, playerId, fixtures.Revision.Id);
     });
 
-    private void ApplyCatalogRevision(SqliteTransaction transaction, Guid playerId, Quantities? cost = null)
+    private static void ApplyCatalogRevision(SqliteTransaction transaction, Guid playerId, MissionDto revision)
     {
-        var revision = fixtures.Revision;
         Execute(transaction, """
             UPDATE Mission SET Title = $title, RewardCredits = $reward, Revision = $revision WHERE PlayerId = $player AND Id = $mission;
             UPDATE MissionRequirement SET Quantity = CASE SupplyCode WHEN 'fuel' THEN $fuel ELSE $rations END
             WHERE PlayerId = $player AND MissionId = $mission;
             """, ("$player", playerId), ("$mission", revision.Id), ("$title", revision.Title),
             ("$reward", revision.RewardCredits), ("$revision", revision.Revision),
-            ("$fuel", (cost ?? revision.Cost).Fuel), ("$rations", (cost ?? revision.Cost).Rations));
+            ("$fuel", revision.Cost.Fuel), ("$rations", revision.Cost.Rations));
     }
 
     private static void RequireSupplies(Quantities available, Quantities cost)

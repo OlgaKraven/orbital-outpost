@@ -18,6 +18,11 @@ if (gameSession.id && savedJournal?.partyId === gameSession.id) {
   gameSession.lastCommand = gameSession.logs.find(entry => entry.method === 'POST') ?? null;
 }
 const simNotebook = readLocal('outpost-e01-notebook', {});
+let customDraft = readLocal('outpost-custom-draft', {
+  stock: { fuel: 10, rations: 5 },
+  snapshot: { cost: { fuel: 6, rations: 2 }, rewardCredits: 100 },
+  catalog: { cost: { fuel: 7, rations: 3 }, rewardCredits: 160 }
+});
 let currentAttempt = readLocal('outpost-e01-attempt', null, partyStorage);
 let simTrack = readLocal('outpost-sim-track', null, partyStorage);
 let simChecked = readLocal('outpost-sim-checked', null, partyStorage);
@@ -27,7 +32,7 @@ let view = 'quest';
 let leavePrimer;
 let lastMainRoute = readLocal('outpost-main-route', '#simulator-learn', 'sessionStorage');
 
-const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
+const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|custom|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
 const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|project|build(?:-[1-4])?))?)$/;
 const stationRoute = /^#(station|reference|worksheet)-([1-8])$/;
 if (!mainRoute.test(lastMainRoute)) lastMainRoute = '#simulator-learn';
@@ -258,7 +263,7 @@ async function request(method, path, data, record = true) {
   const body = await response.json();
   const entry = { method, path, status: response.status, body, request: data, location: response.headers.get('Location') };
   if (record) {
-    const newParty = method === 'POST' && response.ok && path.startsWith('/api/demo/games?');
+    const newParty = method === 'POST' && response.ok && (path.startsWith('/api/demo/games?') || path === '/api/demo/games/custom');
     gameSession.logs = newParty ? [entry] : [entry, ...gameSession.logs].slice(0, 32);
     if (method === 'POST') gameSession.lastCommand = entry;
     saveLocal('outpost-party-journal', { partyId: newParty ? body.id : gameSession.id, entries: gameSession.logs }, partyStorage);
@@ -328,16 +333,18 @@ function recordComparison() {
 }
 
 async function gameAction(action, value) {
-  if (action === 'new') return runGame(async () => {
-    const path = '/api/demo/games?scenario=' + encodeURIComponent(value === 'e01' ? 'briefing' : value);
-    const newGame = await request('POST', path);
+  if (action === 'new' || action === 'new-custom') return runGame(async () => {
+    const custom = action === 'new-custom';
+    const path = custom ? '/api/demo/games/custom' : '/api/demo/games?scenario=' + encodeURIComponent(value === 'e01' ? 'briefing' : value);
+    const newGame = await request('POST', path, custom ? value : undefined);
     gameSession.id = newGame.id;
     gameSession.game = newGame;
     gameSession.selected = null;
     gameSession.journal = null;
-    simTrack = { id: newGame.id, exercise: value === 'e01' || value === 'launch-transfer' ? 'e01' : 'party' };
+    simTrack = { id: newGame.id, exercise: custom || value === 'e01' || value === 'launch-transfer' ? 'e01' : 'party' };
     saveLocal('outpost-party', newGame.id, partyStorage);
     saveLocal('outpost-sim-track', simTrack, partyStorage);
+    if (custom) saveAttempt({ inputs: value });
     await refreshGame();
     location.hash = '#simulator';
   }, 'Начальные данные загружены.');
@@ -387,6 +394,7 @@ function simObservation() {
 }
 
 function e01CatalogKey(game) {
+  if (game.scenarioId === 'custom') return 'catalogCustom';
   return game.scenarioId === 'launch-transfer' ? 'catalog84' : 'catalog73';
 }
 
@@ -430,8 +438,9 @@ function exportStudy() {
       studyRows(sheet, worksheets[index] ?? {}).map(row => Object.fromEntries(sheet.columns.map((column, cell) =>
         [column, row[cell] ?? ''])))]))
   }));
-  const observations = { catalog73: completedE01('catalog73'), catalog84: completedE01('catalog84') };
-  if (Object.keys(simNotebook).length || observations.catalog73 || observations.catalog84) output.unshift({
+  const observations = { catalog73: completedE01('catalog73'), catalog84: completedE01('catalog84'),
+    catalogCustom: completedE01('catalogCustom') };
+  if (Object.keys(simNotebook).length || Object.values(observations).some(Boolean)) output.unshift({
     station: 'E01', name: 'Проверка запуска',
     simulatorEvidence: {
       mode: browserDemo ? 'browser-model' : 'reference-server',
@@ -442,10 +451,14 @@ function exportStudy() {
     studentApiEvidence: { ...simNotebook.studentApi,
       ...(simNotebook.studentApiNote ? { previousNote: simNotebook.studentApiNote } : {}) }
   });
-  const url = URL.createObjectURL(new Blob([JSON.stringify(output, null, 2)], { type: 'application/json;charset=utf-8' }));
+  downloadJson('outpost-project-decisions.json', output);
+}
+
+function downloadJson(filename, data) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'outpost-project-decisions.json';
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
@@ -471,6 +484,10 @@ main.addEventListener('click', event => {
   }
   if (button.hasAttribute('data-scroll-sheets')) focusWorksheet();
   if (button.hasAttribute('data-export-study')) exportStudy();
+  if (button.hasAttribute('data-export-custom')) {
+    const data = customFormData(button.form);
+    if (!customGameError(data)) downloadJson('outpost-scenario.json', data);
+  }
   if (button.dataset.addRow) {
     const sheet = LearningCase.stages[selectedStation].sheets.find(item => item.id === button.dataset.addRow);
     const saved = worksheets[selectedStation] ??= {};
@@ -486,7 +503,10 @@ main.addEventListener('submit', event => {
   const operation = event.target.dataset.simForm;
   if (operation) {
     event.preventDefault();
-    if (operation === 'select') {
+    if (operation === 'custom') {
+      const data = customFormData(event.target);
+      if (!customGameError(data)) gameAction('new-custom', data);
+    } else if (operation === 'select') {
       gameAction('select', event.target.elements.expeditionId.value);
     } else {
       const selected = event.target.querySelector('input[name="selection"]:checked');
@@ -513,6 +533,13 @@ main.addEventListener('submit', event => {
 
 main.addEventListener('input', event => {
   const input = event.target;
+  const customForm = input.closest('[data-sim-form="custom"]');
+  if (customForm) {
+    customDraft = customFormData(customForm);
+    saveLocal('outpost-custom-draft', customDraft);
+    updateCustomPreview(customForm);
+    return;
+  }
   const notebookField = {
     'sim-prediction': 'prediction',
     'sim-transfer-prediction': 'transferPrediction'

@@ -111,6 +111,32 @@
         ]
       }
     },
+    "/api/demo/games/custom": {
+      "post": {
+        "summary": "Создать партию E01 со своими данными",
+        "description": "Склад должен покрывать снимок подготовленного рейса M01. Карточка каталога получает отдельные условия редакции 2. Остальные миссии берутся из исходного каталога.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CustomGameRequest" },
+              "example": {
+                "stock": { "fuel": 14, "rations": 8 },
+                "snapshot": { "cost": { "fuel": 5, "rations": 3 }, "rewardCredits": 120 },
+                "catalog": { "cost": { "fuel": 11, "rations": 7 }, "rewardCredits": 175 }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Новая партия с подготовленным рейсом",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Game" } } }
+          },
+          "400": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
     "/api/demo/catalog-revision": {
       "post": {
         "summary": "Опубликовать учебную редакцию M01",
@@ -411,6 +437,37 @@
       }
     },
     "schemas": {
+      "CustomGameRequest": {
+        "type": "object",
+        "required": ["stock", "snapshot", "catalog"],
+        "properties": {
+          "stock": {
+            "type": "object",
+            "required": ["fuel", "rations"],
+            "properties": {
+              "fuel": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+              "rations": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+            }
+          },
+          "snapshot": { "$ref": "#/components/schemas/CustomMissionTerms" },
+          "catalog": { "$ref": "#/components/schemas/CustomMissionTerms" }
+        }
+      },
+      "CustomMissionTerms": {
+        "type": "object",
+        "required": ["cost", "rewardCredits"],
+        "properties": {
+          "cost": {
+            "type": "object",
+            "required": ["fuel", "rations"],
+            "properties": {
+              "fuel": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+              "rations": { "type": "integer", "minimum": 1, "maximum": 1000000 }
+            }
+          },
+          "rewardCredits": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+        }
+      },
       "PrepareRequest": {
         "type": "object",
         "required": [
