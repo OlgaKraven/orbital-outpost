@@ -1,0 +1,331 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Эталоны ЛР01–ЛР08</title><style>* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root {
+  --space: #0b2630;
+  --deep: #103641;
+  --ink: #142e34;
+  --muted: #485e5b;
+  --paper: #f3f5ed;
+  --card: #fcfdf8;
+  --line: #d5dfd2;
+  --mint: #bce8bc;
+  --gold: #f0ca86;
+  --error: #8b352d;
+  --width: 1260px;
+  font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+body { margin: 0; }
+a { color: inherit; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .66; }
+:focus-visible { outline: 3px solid #c27e26; outline-offset: 4px; }
+.skip { position: absolute; left: 12px; top: -80px; z-index: 9; padding: 10px 18px; background: white; }
+.skip:focus { top: 12px; }
+.site-header, .hero, .station-nav, main, footer { width: min(calc(100% - 60px), var(--width)); margin-inline: auto; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 78px; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 7px 22px; }
+.site-header nav a { padding-block: 7px; text-decoration: none; border-bottom: 2px solid transparent; color: var(--muted); }
+.site-header nav a[aria-current="page"] { border-color: #498163; color: var(--ink); font-weight: 700; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 750; white-space: nowrap; }
+.logo { display: inline-grid; place-items: center; background: var(--space); color: var(--mint); width: 36px; height: 36px; border-radius: 50%; font-size: 25px; }
+.hero { position: relative; display: grid; grid-template-columns: 1fr 1.13fr; overflow: hidden; min-height: 368px; border-radius: 27px 27px 27px 5px; background: var(--space); color: #eef6e9; }
+.hero-copy { padding: clamp(26px, 4.4vw, 61px); z-index: 1; align-self: center; }
+.signal { display: flex; align-items: center; gap: 10px; color: #c1d8c9; margin: 0 0 16px; font-size: .88rem; }
+.signal span { width: 9px; height: 9px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px #bce8bc26; }
+h1, h2, h3, .score strong { font-family: Bahnschrift, "Segoe UI", system-ui, sans-serif; }
+h1 { margin: 0; font-size: clamp(2.55rem, 5vw, 4.9rem); line-height: .99; letter-spacing: -.045em; font-weight: 680; }
+h1 span { color: var(--gold); }
+.hero-copy > p:not(.signal) { margin-block: 19px 25px; max-width: 37ch; color: #c7ddda; }
+.hero-actions, .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.button { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; min-height: 43px; border: 1px solid var(--line); border-radius: 7px; text-decoration: none; font-weight: 700; background: var(--card); color: var(--ink); line-height: 1.3; text-align: center; }
+.button:hover { background: #e5eee1; }
+.button.primary { background: var(--mint); color: #132f2c; border-color: #a3cda3; }
+.button.primary:hover { background: #d8f3cb; }
+.button.ghost { color: #eef6e9; background: transparent; border-color: #66858a; }
+.button.ghost:hover { background: #214650; }
+.star-map { position: relative; min-height: 270px; }
+.orbit-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-node { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #bce8bc9e; color: #f4faea; background: #153b43; font: 700 .9rem Bahnschrift, sans-serif; text-decoration: none; box-shadow: 0 0 0 4px #153b4380; }
+.map-node:hover, .map-node[aria-current="step"] { color: var(--space); background: var(--gold); border-color: var(--gold); }
+.map-node.done { background: var(--mint); color: var(--space); }
+.map-caption { display: flex; justify-content: space-between; gap: 10px; position: absolute; bottom: 0; padding: 10px 18px; color: #e3f0e3; background: #09242bcf; width: 100%; font-size: .81rem; }
+.station-nav { display: grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap: 6px; margin-block: 17px 26px; }
+.station-nav a { display: grid; grid-template-columns: 24px auto; gap: 7px; align-items: center; min-height: 48px; padding: 7px 8px; text-decoration: none; border-bottom: 2px solid var(--line); font-size: .84rem; color: var(--muted); }
+.station-nav a:hover, .station-nav a[aria-current="step"] { border-color: #437c61; color: var(--ink); background: #e4eddf; }
+.station-nav .number { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e2e8dc; font-weight: 700; color: var(--ink); }
+.station-nav .done .number { background: var(--mint); }
+main { margin-bottom: 48px; min-height: 300px; }
+.workspace, .sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .89fr); gap: 18px; align-items: start; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(17px, 2.8vw, 33px); min-width: 0; }
+.panel > :first-child, .reference > :first-child { margin-top: 0; }
+.kicker { color: #396e55; font-size: .9rem; margin: 0 0 7px; font-weight: 700; }
+h2 { font-size: clamp(1.75rem, 3.4vw, 2.95rem); margin: 0 0 12px; line-height: 1.12; letter-spacing: -.032em; overflow-wrap: anywhere; }
+h3 { font-size: 1.2rem; margin: 21px 0 7px; line-height: 1.2; }
+p { margin: 0 0 12px; }
+.brief { border-left: 4px solid #619279; padding: 12px 15px; background: #eaf1e7; margin-block: 19px; }
+.brief strong { display: block; }
+.steps { padding-left: 23px; margin: 7px 0 16px; }
+.steps li + li { margin-top: 6px; }
+.note { color: var(--muted); }
+.draft-label { display: block; margin-top: 17px; font-weight: 700; }
+#draft { display: block; width: 100%; margin: 5px 0; padding: 9px; resize: vertical; border: 1px solid #729087; border-radius: 6px; color: var(--ink); background: white; }
+.draft-preview { margin-bottom: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.example { border-left: 3px solid #b58a48; background: #faf2e0; padding: 10px 13px; }
+.station-explanation summary { cursor: pointer; margin-bottom: 7px; }
+.brief p { margin: 9px 0 0; }
+.worksheet-panel { margin-top: 18px; }
+.worksheet + .worksheet { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 8px; }
+.worksheet table { min-width: 600px; }
+.worksheet td { padding: 6px; }
+.worksheet textarea, .primer-json textarea { width: 100%; min-width: 105px; color: var(--ink); background: white; border: 1px solid #789288; border-radius: 5px; padding: 7px; resize: vertical; }
+.text-button { border: 0; padding: 0; color: #285b48; background: none; text-decoration: underline; }
+.case-selector { margin-block: 4px 18px; background: #e4eddf; padding: 13px 16px; border-radius: 10px; }
+.case-selector .note { margin: 8px 0 0; }
+.primer { width: 100%; }
+.primer-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.primer-tabs [aria-pressed="true"], #primer-variants [aria-pressed="true"] { background: var(--mint); border-color: #5d9272; }
+.primer-visual { margin: 12px 0; padding: clamp(12px, 2.5vw, 25px); border: 1px solid #31585b; border-radius: 11px; background: var(--space); color: #edf5e9; }
+.primer-visual p { color: #d4e5de; }
+.primer-visual pre { background: #153943; margin: 9px 0 0; }
+.primer-flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr)); gap: 10px; list-style: none; padding: 0; margin: 0; }
+.primer-flow li { min-height: 53px; display: grid; place-items: center; position: relative; text-align: center; border: 1px solid #648382; border-radius: 7px; padding: 7px; font-size: .9rem; overflow-wrap: anywhere; }
+.primer-flow .flow-active { background: var(--mint); color: var(--ink); font-weight: 700; }
+.primer-flow .flow-blocked { border-style: dashed; color: #b9c8c7; }
+.primer-flow .flow-blocked small { font-size: .77rem; }
+.primer-flow:not(.primer-structure) .flow-active::after { content: ""; position: absolute; height: 4px; width: 34%; bottom: 5px; left: 33%; border-radius: 4px; background: #267057; animation: packet 420ms ease-out both; }
+.primer-flow li:not(:last-child)::before { content: "›"; position: absolute; right: -10px; color: #bce8bc; z-index: 1; font-size: 19px; }
+.primer-structure li:not(:last-child)::before { content: "·"; }
+.relation-strip { margin: 8px 0 0; font-size: .85rem; }
+@keyframes packet { from { opacity: 0; transform: translateX(-70%); } to { opacity: 1; transform: translateX(0); } }
+.primer-paused .flow-active::after, .primer-paused .stock-track > * { animation-play-state: paused !important; }
+.primer-stock { display: grid; gap: 8px; max-width: 640px; }
+.stock-legend { display: flex; gap: 16px; margin: 0; font-size: .85rem; }
+.stock-legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; background: var(--mint); }
+.stock-legend span:first-child::before { background: var(--gold); }
+.stock-track { display: flex; height: 13px; background: #284951; border-radius: 8px; overflow: hidden; }
+.stock-track > * { width: var(--share); transform-origin: left; animation: stock-fill 420ms ease-out both; }
+.stock-track i { background: var(--gold); }
+.stock-track b { background: var(--mint); }
+@keyframes stock-fill { from { opacity: .55; } to { opacity: 1; } }
+.primer-json { display: grid; max-width: 590px; gap: 7px; justify-items: start; margin: 10px 0; }
+.primer-json textarea { font-family: Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) {
+  .primer-flow .flow-active::after, .stock-track > * { animation: none !important; }
+}
+.section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.section-heading h2 { margin-bottom: 0; }
+.challenge { border: 0; padding: 0; margin: 18px 0 22px; min-inline-size: 0; }
+.challenge legend { padding: 0; font-weight: 700; margin-bottom: 9px; }
+.choice { display: block; width: 100%; text-align: left; padding: 9px 11px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 6px; background: #f1f5ed; color: var(--ink); }
+.choice:hover { border-color: #588870; }
+.choice[data-selected="true"] { border-color: #ad6f2e; background: #fbefd7; }
+.choice[data-correct="true"] { border-color: #629779; background: #def0dc; }
+.feedback { min-height: 26px; color: var(--muted); margin-block: 6px 0; }
+.feedback.error, .error { color: var(--error); }
+.numeric { display: flex; flex-wrap: wrap; align-items: end; gap: 7px; }
+.numeric label { display: grid; color: var(--muted); font-size: .9rem; }
+input[type="number"] { width: 130px; padding: 8px; border: 1px solid #729087; border-radius: 5px; background: white; color: var(--ink); }
+.progress-track { height: 7px; border-radius: 6px; overflow: hidden; background: #e2eadf; margin-bottom: 14px; }
+.progress-track span { height: 100%; display: block; width: var(--progress); background: #548a6c; }
+.table-wrap { overflow-x: auto; margin-bottom: 15px; }
+table { border-collapse: collapse; text-align: left; width: 100%; font-size: .94rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+th { background: #e8efe4; font-weight: 750; }
+td { overflow-wrap: anywhere; }
+.score { display: flex; justify-content: space-between; align-items: center; border-radius: 11px; background: var(--deep); color: #f2f8ed; padding: 12px 15px; margin-bottom: 12px; }
+.score strong { font-size: 2.15rem; color: var(--gold); line-height: 1; }
+.missions { margin: 14px 0; }
+.mission { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 13px; border-top: 1px solid var(--line); padding: 13px 0; }
+.mission h3 { margin: 0; }
+.mission p { margin-bottom: 3px; }
+.mission-id { color: #3b7158; margin-right: 6px; font-size: .83rem; font-weight: 700; }
+.phase { display: inline-flex; gap: 6px; align-items: center; background: #e4efdf; border-radius: 20px; padding: 4px 10px; font-size: .84rem; }
+.phases { display: flex; flex-wrap: wrap; gap: 5px; padding: 0; margin: 10px 0 15px; list-style: none; }
+.phases .current { font-weight: 700; background: var(--mint); }
+.history { display: grid; gap: 7px; border-left: 2px solid #73a789; padding-left: 15px; margin: 12px 0; list-style: none; }
+.history time { color: var(--muted); font-size: .86rem; margin-left: 5px; }
+pre { overflow: auto; background: #102f39; color: #e9f5e8; border-radius: 8px; padding: 12px; font-size: .84rem; max-height: 340px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { overflow-wrap: anywhere; }
+.log { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.log button { border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; background: #eef4eb; color: var(--ink); font-size: .85rem; }
+.log button[aria-pressed="true"] { border-color: #478463; background: var(--mint); }
+[data-objective][aria-pressed="true"] { border-color: #478463; background: var(--mint); }
+.reference { max-width: 1050px; }
+.document header, .document article { max-width: 1020px; margin-inline: auto; }
+.document header { margin-block: 28px 18px; }
+.document article { margin-bottom: 36px; }
+.document h1 { font-size: clamp(2rem, 5vw, 3.8rem); }
+.document section + section { margin-top: 33px; border-top: 1px solid var(--line); padding-top: 25px; }
+.document nav { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 15px; }
+.document .panel { width: min(calc(100% - 24px), 1020px); }
+.document > header { width: min(calc(100% - 24px), 1020px); }
+.diagram { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0; }
+.diagram span { border: 1px solid #a7bba9; background: #eaf3e7; border-radius: 6px; padding: 6px 9px; }
+footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .87rem; }
+@media (max-width: 1050px) { .station-nav { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+@media (max-width: 800px) {
+  .site-header, .hero, .station-nav, main, footer { width: calc(100% - 32px); }
+  .site-header { padding-block: 12px; flex-wrap: wrap; gap: 6px; }
+  .site-header nav { gap: 5px 13px; font-size: .87rem; }
+  .hero { grid-template-columns: 1fr 1fr; }
+  .hero-copy { padding: 25px 20px; }
+  .workspace, .sim-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 580px) {
+  .hero { grid-template-columns: 1fr; border-radius: 19px 19px 19px 4px; }
+  .hero-copy { padding: 25px 19px 19px; }
+  .star-map { min-height: 236px; }
+  .station-nav { grid-template-columns: repeat(2, minmax(0,1fr)); margin-bottom: 19px; }
+  .mission { grid-template-columns: 1fr; }
+  .mission button { justify-self: start; }
+  .map-node { width: 28px; height: 28px; }
+}
+@media print {
+  .document { background: white; }
+  .document nav { display: none; }
+  .document .panel { padding: 0; border: 0; width: 100%; }
+  .document section { break-inside: auto; }
+  .document tr { break-inside: avoid; }
+  .table-wrap { overflow: visible; }
+}
+
+/* The application and its in-context lessons share one palette. */
+.outpost-app {
+  --sim-bg: #0a1820;
+  --sim-panel: #142b36;
+  --sim-ink: #ecf6f3;
+  --sim-muted: #b7cdcf;
+  --sim-line: #3b5963;
+  --sim-mint: #a4efca;
+  --ink: var(--sim-ink);
+  --muted: var(--sim-muted);
+  --paper: var(--sim-bg);
+  --card: var(--sim-panel);
+  --line: var(--sim-line);
+  --mint: var(--sim-mint);
+  --error: #ffd0ad;
+  --width: 1110px;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 92% 0%, #12333c 0, var(--sim-bg) 55%);
+  color: var(--ink);
+}
+.outpost-app main:focus, .outpost-app #worksheets:focus, .outpost-app #sim-message:focus { outline: none; }
+.outpost-app .site-header { min-height: 65px; }
+.outpost-app .site-header nav a[aria-current="page"] { border-color: var(--mint); color: var(--mint); }
+.outpost-app .logo { border: 1px solid var(--line); }
+.outpost-app .skip { background: var(--card); }
+.outpost-app .kicker, .outpost-app .signal { color: var(--mint); }
+.outpost-app .button { color: var(--ink); background: #1c3743; border-color: #55727e; }
+.outpost-app .button:hover { background: #294b57; }
+.outpost-app .button.primary { color: #102a22; background: var(--mint); border-color: var(--mint); }
+.outpost-app .button.primary:hover { background: #c3f7db; }
+.outpost-app .button.ghost { background: transparent; }
+.outpost-app .text-button { color: var(--mint); }
+.outpost-app th { color: var(--ink); background: #213d49; }
+.outpost-app .choice, .outpost-app .diagram span { background: #10232d; border-color: var(--line); }
+.outpost-app .choice:hover { border-color: var(--mint); }
+.outpost-app .choice[data-correct="true"] { background: #1f4844; border-color: var(--mint); }
+.outpost-app .choice[data-selected="true"] { background: #41332b; border-color: var(--gold); }
+.outpost-app input[type="number"], .outpost-app textarea, .outpost-app select {
+  background: #0c202b; color: var(--ink); border-color: #5e7b83;
+}
+.outpost-app .brief, .outpost-app .example { background: #0e222c; color: var(--ink); }
+.outpost-app .progress-track { background: #28434d; }
+.outpost-app .progress-track span { background: var(--mint); }
+.outpost-app .station-nav a:hover, .outpost-app .station-nav a[aria-current="step"] {
+  color: var(--mint); background: #1b3945; border-color: var(--mint);
+}
+.outpost-app .station-nav .number { background: #28434d; color: var(--ink); }
+.outpost-app .station-nav .done .number { background: var(--mint); color: #102a22; }
+.outpost-app .map-note { color: var(--muted); padding-top: 16px; }
+.simulator-mode .hero, .simulator-mode .station-nav, .station-mode .hero, .project-map-mode .station-nav { display: none; }
+.station-mode .station-nav { margin-top: 4px; }
+.station-workspace h1, .reference h1 { font-size: clamp(1.85rem,4.5vw,3rem); margin-bottom: 12px; }
+.station-section { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; }
+.station-section h2 { font-size: clamp(1.25rem,3vw,1.65rem); }
+.station-section .primer { padding: 15px 0 0; border: 0; }
+.station-draft { margin-top: 18px; }
+.station-section .challenge { max-width: 730px; }
+
+.sim-shell {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: clamp(16px, 3.6vw, 37px);
+}
+.sim-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 11px;
+  margin-bottom: 16px;
+}
+.sim-heading p { margin: 0; font-weight: 700; font-size: .95rem; color: var(--mint); }
+.sim-eyebrow { margin-bottom: 7px; color: var(--mint); font-size: .87rem; font-weight: 650; }
+.sim-status { color: var(--mint); font-size: .94rem; margin-bottom: 11px; }
+.sim-status:empty { display: none; }
+.sim-status-error { color: var(--error); }
+.sim-progress { margin: 0 0 18px; }
+.sim-progress > div { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; }
+.sim-progress p { color: var(--muted); margin: 0; font-size: .89rem; }
+.sim-progress strong { color: var(--ink); margin-inline-start: 5px; }
+.sim-progress span { color: var(--muted); font-size: .84rem; }
+.sim-progress progress { width: 100%; height: 5px; display: block; margin-top: 8px; border: 0; accent-color: var(--mint); }
+.sim-progress progress::-webkit-progress-bar { background: #294550; border-radius: 3px; }
+.sim-progress progress::-webkit-progress-value { background: var(--mint); border-radius: 3px; }
+.sim-panel { min-width: 0; }
+.sim-panel h2 { font-size: clamp(1.55rem,4vw,2.65rem); }
+.sim-panel p { max-width: 76ch; }
+.sim-panel pre { background: #0b1f2a; border: 1px solid var(--line); }
+.sim-sources tbody th { background: transparent; }
+.sim-sources small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; line-height: 1.35; }
+.sim-sources th:not(:first-child), .sim-sources td { width: 15%; text-align: center; }
+.sim-actions { display: flex; flex-wrap: wrap; gap: 9px 17px; align-items: center; margin-top: 15px; }
+.sim-text-link { color: var(--muted); font-size: .92rem; text-underline-offset: 3px; }
+.sim-text-link:hover { color: var(--mint); }
+.sim-signal { padding-left: 22px; margin-block: 10px 15px; }
+.sim-signal li { padding-block: 2px; }
+.sim-signal span { margin-left: 8px; color: var(--muted); }
+.sim-code-note p { margin-bottom: 4px; }
+.sim-code-note pre { margin-top: 6px; }
+.sim-animation, .sim-log { border-top: 1px solid var(--line); padding-block: 9px; }
+.sim-animation summary, .sim-log summary { cursor: pointer; overflow-wrap: anywhere; }
+.sim-animation .primer { padding: 12px 0 0; border: 0; }
+.primer-application { border-left: 3px solid var(--mint); padding: 5px 0 5px 10px; }
+.outpost-app .primer-visual { background: #0d202b; border-color: var(--line); }
+.outpost-app .primer-flow li { min-height: 38px; border: 0; border-bottom: 2px solid var(--line); border-radius: 0; }
+.outpost-app .primer-flow .flow-active { color: var(--mint); background: transparent; border-color: var(--mint); }
+.outpost-app .primer-flow .flow-active::after { display: none; }
+.outpost-app .primer-tabs [aria-pressed="true"], .outpost-app #primer-variants [aria-pressed="true"],
+.outpost-app [data-objective][aria-pressed="true"] { color: #102a22; background: var(--mint); border-color: var(--mint); }
+.sim-prediction { display: grid; gap: 4px; }
+.sim-prediction span, .sim-prediction small, .sim-hint { color: var(--muted); }
+.sim-prediction textarea, .sim-journal-select select { border: 1px solid #5e7b83; border-radius: 6px; padding: 8px; }
+.sim-prediction textarea { width: min(100%,710px); resize: vertical; }
+.sim-inventory { margin: 10px 0 0; }
+.sim-inventory h3 { margin-top: 0; }
+.sim-balance { margin: 0; color: var(--muted); }
+.sim-balance strong { color: var(--gold); font-size: 1.2rem; }
+.sim-observation { border-left: 3px solid var(--mint); padding-left: 11px; }
+.sim-result { margin-top: 14px; }
+.sim-saved { color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+.sim-pick { border: 0; padding: 0; margin: 10px 0 0; min-inline-size: 0; }
+.sim-pick legend { margin-bottom: 3px; font-weight: 700; }
+.sim-option { display: flex; gap: 10px; align-items: start; border-bottom: 1px solid var(--line); padding: 9px 8px; cursor: pointer; min-height: 44px; }
+.sim-option:hover, .sim-option:has(input:checked) { background: #21414d; }
+.sim-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sim-option input { accent-color: var(--mint); margin: 5px 0 0; flex: 0 0 auto; }
+.sim-option small { display: block; color: var(--muted); font-size: .9rem; margin-top: 2px; }
+.sim-journal-select { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 13px; }
+.sim-journal-select label { display: grid; gap: 4px; max-width: 100%; }
+@media (max-width: 460px) {
+  .sim-signal span { display: block; margin-left: 0; }
+  .sim-panel th, .sim-panel td { padding-inline: 5px; }
+}
+</style></head><body class="document"><header><p class="kicker">Орбитальный форпост</p><h1>Эталоны ЛР01–ЛР08</h1><p>Показ преподавателя и артефакты для сверки после выполнения задания.</p><nav aria-label="Материалы"><a class="button" href="index.html#simulator-learn">Тренажёр API</a><a class="button" href="index.html#map">Карта ЛР01–ЛР08</a><a class="button" href="index.html#simulator-materials">Учебные материалы</a></nav></header><article class="panel"><section id="show"><h2>Показ на занятии</h2><ol class="steps"><li>Открыть первый прототип E01. Показать начальный JSON, затем отправить запуск дважды. Для самостоятельной проверки изменить только каталог на 8/4.</li><li>Открыть «Вводный тренажёр». Показать, что один и тот же запрос можно отправить из браузера и из .http.</li><li>Открыть досье и выдать студенческий комплект. Предложить записать прогноз для запасов 10/5, 7/3 и 8/2.</li><li>Открыть выбор сценария и выбрать «После донесения». Для максимума за партию запустить старую M01, завершить её и выполнить M03. В новой партии выбрать цель 150 по M01, затем подтвердить замену. Сравнить результаты.</li><li>В «Сценариях» выбрать «Не хватает пайков». Нажать «Проверить замену» и открыть журнал. Сверить HTTP-ответ и резерв до и после.</li><li>На станции 7 показать трассу R23 от источника С3 до теста 409. Затем сравнить запросы эталона и прототипа студента.</li></ol><div class="table-wrap"><table><thead><tr><th scope="col">Проверка</th><th scope="col">Условие</th><th scope="col">Ожидаемый результат</th></tr></thead><tbody><tr><td>А · Сохранить условия</td><td>С1, С3, С4</td><td>Снимок 6/2 и 100. После M01 доступно 4/3. Выполнение M03 даёт итог 190 и остаток 0/0.</td></tr><tr><td>Б · Подтвердить замену</td><td>С2, С3, С5</td><td>Исходная M01 отменена, новая M01 ссылается на неё. Снимок 7/3 и 160. После рейса остаток 3/2, M03 недоступна.</td></tr><tr><td>Граница</td><td>Запас 7/3</td><td>Замена проходит. На складе 7/3, резерв 7/3, доступно 0/0. После запуска запас 0/0.</td></tr><tr><td>Дефицит обоих ресурсов</td><td>Запас 6/2</td><td>409 insufficient_supplies. Старый рейс prepared, резерв 6/2, доступно 0/0. В истории только подготовка.</td></tr><tr><td>Дефицит пайков</td><td>Запас 8/2</td><td>409 insufficient_supplies. Не хватает одного пайка. Старый резерв 6/2, доступно 2/0.</td></tr><tr><td>Устаревшая редакция</td><td>Каталог 2, запрос с 1</td><td>409 catalog_revision_mismatch. Исходный рейс и запасы сохраняются.</td></tr><tr><td>Повтор завершения</td><td>Рейс completed</td><td>409 invalid_transition. Награда учтена один раз. В журнале остаются три события.</td></tr></tbody></table></div></section><section id="e01"><h2>Эталон первого API · E01</h2><div class="table-wrap"><table><thead><tr><th scope="col">Источник</th><th scope="col">Топливо</th><th scope="col">Пайки</th></tr></thead><tbody><tr><td>Физический запас</td><td>10</td><td>5</td></tr><tr><td>Согласованные условия E01</td><td>6</td><td>2</td></tr><tr><td>Текущий каталог</td><td>7</td><td>3</td></tr><tr><td>Каталог в самостоятельной проверке</td><td>8</td><td>4</td></tr></tbody></table></div><div class="table-wrap"><table><thead><tr><th scope="col">Прогон</th><th scope="col">HTTP</th><th scope="col">Состояние</th><th scope="col">Склад</th><th scope="col">История</th></tr></thead><tbody><tr><td>Первый launch</td><td>200</td><td>inFlight</td><td>4/3</td><td>prepared, inFlight</td></tr><tr><td>Повтор launch</td><td>409</td><td>inFlight</td><td>4/3</td><td>prepared, inFlight</td></tr><tr><td>Перенос: каталог 8/4</td><td>200, затем 409</td><td>inFlight</td><td>4/3</td><td>prepared, inFlight</td></tr></tbody></table></div><p>При результате 3/2 был использован каталог 7/3. При результате 2/1 после переноса был использован каталог 8/4. В готовом проекте эталон первого API находится в source/launch-reference.</p></section><section id="lab-1"><h2>ЛР01. Заинтересованные стороны</h2><h3>Эталон по донесению</h3><div class="table-wrap"><table><thead><tr><th scope="col">Участник</th><th scope="col">Влияние и интерес</th><th scope="col">Что подтверждает</th><th scope="col">Источник</th></tr></thead><tbody><tr><td>Редактор миссий</td><td>Высокое для каталога, высокий интерес</td><td>Публикует редакцию 2</td><td>С2</td></tr><tr><td>Диспетчер</td><td>Высокое для замены, высокий интерес</td><td>Подтверждает новую попытку</td><td>С3</td></tr><tr><td>Руководитель</td><td>Высокое для правил, высокий интерес</td><td>Устанавливает порядок и цель</td><td>С3–С5</td></tr><tr><td>Снабжение</td><td>Среднее влияние, высокий интерес</td><td>Подтверждает физические остатки</td><td>С1</td></tr><tr><td>Проверяющий</td><td>Среднее влияние, высокий интерес</td><td>Сверяет переходы и историю</td><td>С6</td></tr></tbody></table></div><p>К диспетчеру — каким действием подтверждается конкретная редакция? К руководителю — что должно сохраниться при невозможности замены? Первый ответ задаёт вход команды, второй — условие атомарности.</p><h3>Ответы испытания</h3><ol class="steps"><li>Диспетчер. Редактор публикует условия, а диспетчер разрешает действие с подготовленным рейсом.</li><li>Значение физического запаса у снабжения. Дефицит проверяется по фактическому запасу. Снабжение подтверждает эти данные.</li></ol></section><section id="lab-2"><h2>ЛР02. Реестр требований</h2><h3>Эталон по донесению</h3><div class="table-wrap"><table><thead><tr><th scope="col">ID</th><th scope="col">Класс и статус</th><th scope="col">Источник</th><th scope="col">Одно требование</th><th scope="col">Наблюдаемый результат</th></tr></thead><tbody><tr><td>R01</td><td>Функция</td><td>Б1</td><td>Показать миссии с условиями выбора</td><td>GET /api/missions → три карточки с ценой и наградой</td></tr><tr><td>R02</td><td>Функция</td><td>Б2</td><td>Создать подготовленную экспедицию</td><td>POST /api/expeditions → 201 и prepared</td></tr><tr><td>R03</td><td>Функция</td><td>Б2</td><td>Запустить подготовленную экспедицию</td><td>launch → inFlight</td></tr><tr><td>R04</td><td>Функция</td><td>Б2</td><td>Завершить запущенную экспедицию</td><td>complete → completed</td></tr><tr><td>R05</td><td>Функция</td><td>Б2</td><td>Отменить подготовленную экспедицию</td><td>cancel → cancelled</td></tr><tr><td>R06</td><td>Функция</td><td>Б4</td><td>Показать историю выбранной экспедиции</td><td>GET /api/expeditions/{id} → события по sequence</td></tr><tr><td>R07</td><td>Функция</td><td>Б1–Б2</td><td>Показать доступный запас по видам</td><td>GET /api/game → inventory.available</td></tr><tr><td>R08</td><td>Данные</td><td>Б1</td><td>Хранить текущую стоимость миссии по видам</td><td>MissionRequirement → по одной строке на вид ресурса</td></tr><tr><td>R09</td><td>Данные</td><td>Б4</td><td>Зафиксировать стоимость при подготовке</td><td>ExpeditionSupply → 6/2 после изменения каталога</td></tr><tr><td>R10</td><td>Данные</td><td>Б4</td><td>Зафиксировать награду при подготовке</td><td>rewardCreditsSnapshot → 100 после изменения каталога</td></tr><tr><td>R11</td><td>Данные</td><td>Б4</td><td>Хранить время каждого перехода</td><td>ExpeditionStatusEvent.changedAtUtc → время UTC</td></tr><tr><td>R12</td><td>Правило</td><td>Б2</td><td>Проверить достаточность каждого ресурса</td><td>4/3 для M03 проходит. 3/3 даёт 409</td></tr><tr><td>R13</td><td>Правило</td><td>Б3</td><td>Допустить одну активную экспедицию</td><td>Одна из двух параллельных подготовок получает 409</td></tr><tr><td>R14</td><td>Правило</td><td>Б3</td><td>Завершить каждую миссию не более одного раза</td><td>Повторная подготовка после completed → 409</td></tr><tr><td>R15</td><td>Правило</td><td>Б2</td><td>Списать физический запас при запуске</td><td>После подготовки 10/5. После запуска 4/3</td></tr><tr><td>R16</td><td>Правило</td><td>Б1–Б2</td><td>Рассчитать баланс по завершённым рейсам</td><td>Два запроса complete для M01 дают суммарно 100</td></tr><tr><td>R17</td><td>Правило</td><td>Б2</td><td>Освободить резерв при отмене</td><td>После отмены M01 доступно 10/5</td></tr><tr><td>R18</td><td>Качество</td><td>Б5</td><td>Применить операцию целиком</td><td>При 409 статус, журнал и запасы совпадают со снимком до команды</td></tr><tr><td>R19</td><td>Качество</td><td>Б5</td><td>Воспроизвести начальное состояние</td><td>Новая партия даёт 10 топлива, 5 пайков и 0 кредитов</td></tr><tr><td>R20</td><td>Функция</td><td>С2</td><td>Показать текущую редакцию M01</td><td>GET /api/missions → revision=2</td></tr><tr><td>R21</td><td>Данные</td><td>С1, С3</td><td>Сохранить редакцию в снимке</td><td>GET подготовленного рейса → catalogRevision=1</td></tr><tr><td>R22</td><td>Правило</td><td>С3</td><td>Принимать замену после явного подтверждения редакции</td><td>POST с expectedCatalogRevision=2</td></tr><tr><td>R23</td><td>Качество</td><td>С3</td><td>Применить замену атомарно</td><td>При 409 сравнить запасы и оба журнала до и после</td></tr><tr><td>R24</td><td>Данные</td><td>С6</td><td>Связать новый рейс с исходным</td><td>replacesExpeditionId равен старому ID</td></tr></tbody></table></div><p>К исходному реестру R01–R19 добавляются пять требований ситуации. Для собственной сдачи оставить 16–20 записей по объёму выбранной ветви. Все требования выбранной ветви должны иметь проверку.</p><h3>Ответы испытания</h3><ol class="steps"><li>Зафиксировать вопрос о пороге, нагрузке и способе измерения. В источнике нет числового порога. Его необходимо согласовать.</li><li>Хранить принятую редакцию в снимке рейса. Одно поле и проверка его сохранения дают атомарную запись.</li></ol></section><section id="lab-3"><h2>ЛР03. Пользовательские истории</h2><h3>Эталон по донесению</h3><h3>Уточнение формулировок</h3><div class="table-wrap"><table><thead><tr><th scope="col">Черновая фраза</th><th scope="col">Проверяемая формулировка</th><th scope="col">Источник или ID</th></tr></thead><tbody><tr><td>«Показать задания»</td><td>Показать стоимость в ресурсах и награду каждой миссии</td><td>R01 · Б1</td></tr><tr><td>«Взять миссию»</td><td>Создать экспедицию в состоянии prepared</td><td>R02 · Б2</td></tr><tr><td>«Проверить запас»</td><td>Проверить достаточность каждого вида ресурса</td><td>R12 · Б2</td></tr><tr><td>«Потратить ресурсы»</td><td>Вычесть снимок стоимости из физического запаса при запуске</td><td>R15 · Б2</td></tr><tr><td>«Отменить миссию»</td><td>Отменить подготовленную экспедицию и освободить её резерв</td><td>R05/R17 · Б2</td></tr><tr><td>«Выдать очки»</td><td>Учитывать награду завершённой экспедиции в балансе</td><td>R16 · Б1–Б2</td></tr><tr><td>«Сохранить историю»</td><td>Записать каждый переход с порядковым номером и временем UTC</td><td>R11 · Б4</td></tr><tr><td>«Сохранить условия»</td><td>Скопировать стоимость и награду при подготовке</td><td>R09/R10 · Б4</td></tr></tbody></table></div><h3>Истории и критерии</h3><div class="table-wrap"><table><thead><tr><th scope="col">Роль и цель</th><th scope="col">Состояние до</th><th scope="col">Действие</th><th scope="col">Успех</th><th scope="col">Граница или отказ</th></tr></thead><tbody><tr><td>Диспетчер запускает согласованный рейс</td><td>prepared v1, каталог v2</td><td>launch</td><td>inFlight, списано 6/2</td><td>Повторный launch → 409</td></tr><tr><td>Диспетчер подтверждает новую редакцию</td><td>prepared v1, запас 10/5</td><td>replacements, редакция 2</td><td>201, новый рейс с 7/3 и 160</td><td>Запас 7/3 тоже допускает замену</td></tr><tr><td>Диспетчер сохраняет рейс при нехватке</td><td>prepared v1, запас 8/2</td><td>replacements, редакция 2</td><td>409, указан дефицит пайка</td><td>Резерв 6/2 и одно событие остаются</td></tr><tr><td>Игрок завершает рейс</td><td>inFlight, снимок 160</td><td>complete</td><td>200, баланс 160</td><td>Повтор → 409, баланс 160</td></tr><tr><td>Проверяющий читает историю</td><td>Исходный и заменяющий рейсы</td><td>GET каждого рейса</td><td>Видны отмена, снимки и связь</td><td>Чужой идентификатор → 404</td></tr></tbody></table></div><p>Пример переработки: «обновить рейс» → «создать новую подготовленную попытку только после подтверждения редакции и проверки запасов» (R22–R24). Остальные исходные примеры даны в эталоне ЛР03.</p><h3>Ответы испытания</h3><ol class="steps"><li>Да, старый резерв заменяется и физического запаса хватает. Проверка замены учитывает освобождаемый резерв и допускает равенство.</li><li>Одного пайка. 8 ≥ 7 по топливу, 2 &lt; 3 по пайкам.</li></ol></section><section id="lab-4"><h2>ЛР04. Глоссарий и сущности</h2><h3>Эталон по донесению</h3><div class="table-wrap"><table><thead><tr><th scope="col">Термин</th><th scope="col">Определение или пример</th><th scope="col">Решение</th></tr></thead><tbody><tr><td>Игрок</td><td>Владелец отдельной партии и запасов</td><td>Сущность Player</td></tr><tr><td>Вид ресурса</td><td>Справочная единица, например топливо или пайки</td><td>Сущность SupplyType</td></tr><tr><td>Позиция запаса</td><td>Количество одного вида ресурса у игрока</td><td>Сущность StockItem</td></tr><tr><td>Требование миссии</td><td>Строка текущей цены для одного ресурса</td><td>Сущность MissionRequirement</td></tr><tr><td>Строка снимка</td><td>Цена попытки для одного ресурса на момент подготовки</td><td>Сущность ExpeditionSupply</td></tr><tr><td>Событие состояния</td><td>Факт перехода с порядковым номером и временем</td><td>Сущность ExpeditionStatusEvent</td></tr><tr><td>Доступный запас</td><td>Физическое количество за вычетом резерва</td><td>Вычисляемое значение</td></tr><tr><td>Баланс</td><td>Сумма снимков наград завершённых экспедиций</td><td>Вычисляемое значение</td></tr><tr><td>Запуск</td><td>Команда отправки подготовленного рейса</td><td>Действие</td></tr><tr><td>Завершение</td><td>Команда подтверждения выполненного рейса</td><td>Действие</td></tr><tr><td>Отмена</td><td>Команда снятия подготовленного резерва</td><td>Действие</td></tr><tr><td>Миссия M01</td><td>Одна текущая карточка</td><td>Сущность Mission</td></tr><tr><td>Редакция 2</td><td>Номер текущих условий</td><td>Атрибут Revision</td></tr><tr><td>Рейс 1 и рейс 2</td><td>Две попытки M01</td><td>Две записи Expedition</td></tr><tr><td>Резерв</td><td>6/2 до замены, 7/3 после</td><td>Вычисление по prepared</td></tr><tr><td>Связь замены</td><td>Новая попытка ссылается на исходную</td><td>Внешний ключ ReplacesExpeditionId</td></tr></tbody></table></div><p>Вместе с исходным глоссарием эти строки показывают границу. Отдельная сущность версий нужна при запросе исторического каталога на произвольную дату.</p><h3>Ответы испытания</h3><ol class="steps"><li>Одна запись каталога, две попытки. Одна карточка задаёт текущие условия. Две попытки хранят разные снимки.</li><li>Версии каталога с временем действия. Снимок рейса описывает только конкретную попытку. Для произвольной даты нужны версии каталога.</li></ol></section><section id="lab-5"><h2>ЛР05. Бизнес-правила</h2><h3>Эталон по донесению</h3><div class="diagram" aria-label="Разрешённые переходы"><span>Подготовлена</span> → <span>В полёте</span> → <span>Завершена</span></div><div class="diagram"><span>Подготовлена</span> → <span>Отменена</span></div><div class="table-wrap"><table><thead><tr><th scope="col">ID</th><th scope="col">Правило и предусловие</th><th scope="col">Основание</th><th scope="col">Результат или проверка</th></tr></thead><tbody><tr><td>BR01</td><td>При подготовке создаётся состояние prepared</td><td>R02</td><td>Успешный POST → prepared и событие №1</td></tr><tr><td>BR02</td><td>Запуск разрешён из prepared</td><td>R03</td><td>Из prepared → inFlight. Из inFlight → 409</td></tr><tr><td>BR03</td><td>Завершение разрешено из inFlight</td><td>R04</td><td>Из inFlight → completed. Из prepared → 409</td></tr><tr><td>BR04</td><td>Отмена разрешена из prepared</td><td>R05</td><td>Из prepared → cancelled. Из inFlight → 409</td></tr><tr><td>BR05</td><td>При подготовке фиксируется количество каждого ресурса</td><td>R09</td><td>Каталог 7/3, подготовленный рейс 6/2</td></tr><tr><td>BR06</td><td>При подготовке фиксируется награда</td><td>R10</td><td>Каталог 160, подготовленный рейс 100</td></tr><tr><td>BR07</td><td>По каждому виду доступное количество не меньше стоимости</td><td>R12</td><td>Ровно 4/3 проходит. 4/2 даёт отказ</td></tr><tr><td>BR08</td><td>Активна максимум одна экспедиция</td><td>R13</td><td>Вторая подготовка при prepared или inFlight → 409</td></tr><tr><td>BR09</td><td>После завершения повтор миссии запрещён</td><td>R14</td><td>После отмены подготовка доступна, после завершения → 409</td></tr><tr><td>BR10</td><td>Запуск вычитает зафиксированную стоимость из физического запаса</td><td>R15</td><td>10/5 − 6/2 = 4/3</td></tr><tr><td>BR11</td><td>В баланс входят снимки наград завершённых экспедиций</td><td>R16</td><td>До complete — 0, после — 100, при повторе — 100</td></tr><tr><td>BR12</td><td>Отмена освобождает весь резерв</td><td>R17</td><td>10/5 в наличии, 0/0 зарезервировано</td></tr><tr><td>BR13</td><td>prepared + замена · Принята текущая новая редакция</td><td>С2, С3</td><td>Старый cancelled, новый prepared</td></tr><tr><td>BR14</td><td>prepared + замена · Физического запаса хватает после освобождения старого резерва</td><td>С3, С6</td><td>201. Физический запас не списывается</td></tr><tr><td>BR15</td><td>prepared + замена · Ресурса недостаточно</td><td>С3</td><td>409. Данные сохраняют исходное состояние</td></tr><tr><td>BR16</td><td>inFlight + замена · Рейс уже запущен</td><td>С3, С6</td><td>409 invalid_transition</td></tr><tr><td>BR17</td><td>prepared + замена · Ожидаемая редакция отличается от текущей</td><td>С2, С3</td><td>409 catalog_revision_mismatch</td></tr></tbody></table></div><p>Статусы рейса сохраняются из базовой модели. Успешная замена — согласованное изменение двух попыток. При неуспехе обе записи, резерв и история сохраняют исходное состояние.</p><h3>Ответы испытания</h3><ol class="steps"><li>prepared. Запуск уже списал ресурсы. Замена относится к существующему резерву.</li><li>prepared. Отказ сохраняет исходную попытку и её резерв.</li></ol></section><section id="lab-6"><h2>ЛР06. Атрибуты и история</h2><h3>Эталон по донесению</h3><div class="table-wrap"><table><thead><tr><th scope="col">Таблица</th><th scope="col">Поля и ограничения</th><th scope="col">Происхождение</th></tr></thead><tbody><tr><td>Player</td><td>Id · UUID, CreatedAtUtc · UTC</td><td>Одна партия. Создаётся сервером</td></tr><tr><td>SupplyType</td><td>Code · текст, Name · текст, Unit · текст</td><td>fuel и rations. Вводятся при инициализации</td></tr><tr><td>StockItem</td><td>PlayerId + SupplyCode · ключ, OnHand · целое ≥ 0</td><td>Исходный запас из набора, обновляется при запуске</td></tr><tr><td>Mission</td><td>PlayerId + Id · ключ, Title · текст, RewardCredits · целое ≥ 0, Revision · целое &gt; 0</td><td>Текущая редакция в каталоге</td></tr><tr><td>MissionRequirement</td><td>PlayerId + MissionId + SupplyCode · ключ, Quantity · целое &gt; 0</td><td>Текущая цена миссии, Б1</td></tr><tr><td>Expedition</td><td>Id · UUID, PlayerId, MissionId, Status, CreatedAtUtc, RewardCreditsSnapshot · целое ≥ 0, CatalogRevision · целое &gt; 0, ReplacesExpeditionId · UUID или NULL</td><td>Снимок награды при подготовке. Статус синхронизируется с событием</td></tr><tr><td>ExpeditionSupply</td><td>ExpeditionId + SupplyCode · ключ, Quantity · целое &gt; 0</td><td>Снимок стоимости при подготовке</td></tr><tr><td>ExpeditionStatusEvent</td><td>ExpeditionId + Sequence · ключ, FromStatus · допускает отсутствие, ToStatus, ChangedAtUtc</td><td>Первое событие без предыдущего состояния. Порядок по Sequence</td></tr></tbody></table></div><p>Доступно = физический запас − резерв. Баланс = сумма снимков наград завершённых рейсов.</p><p>История сохраняет топливо, пайки, награду и переходы с порядковым номером. Связь замены объясняет, почему у одной миссии две попытки.</p><h3>Ответы испытания</h3><ol class="steps"><li>100. Вознаграждение берётся из снимка рейса.</li><li>0. На складе 7, новый резерв 7. Доступный запас равен нулю.</li></ol></section><section id="lab-7"><h2>ЛР07. Ревизия и трассировка</h2><h3>Эталон по донесению</h3><div class="table-wrap"><table><thead><tr><th scope="col">Требование</th><th scope="col">Наблюдаемая проверка</th></tr></thead><tbody><tr><td>R01</td><td>GET /api/missions → три карточки с ценой и наградой</td></tr><tr><td>R02</td><td>POST /api/expeditions → 201 и prepared</td></tr><tr><td>R03</td><td>launch → inFlight</td></tr><tr><td>R04</td><td>complete → completed</td></tr><tr><td>R05</td><td>cancel → cancelled</td></tr><tr><td>R06</td><td>GET /api/expeditions/{id} → события по sequence</td></tr><tr><td>R07</td><td>GET /api/game → inventory.available</td></tr><tr><td>R08</td><td>MissionRequirement → по одной строке на вид ресурса</td></tr><tr><td>R09</td><td>ExpeditionSupply → 6/2 после изменения каталога</td></tr><tr><td>R10</td><td>rewardCreditsSnapshot → 100 после изменения каталога</td></tr><tr><td>R11</td><td>ExpeditionStatusEvent.changedAtUtc → время UTC</td></tr><tr><td>R12</td><td>4/3 для M03 проходит. 3/3 даёт 409</td></tr><tr><td>R13</td><td>Одна из двух параллельных подготовок получает 409</td></tr><tr><td>R14</td><td>Повторная подготовка после completed → 409</td></tr><tr><td>R15</td><td>После подготовки 10/5. После запуска 4/3</td></tr><tr><td>R16</td><td>Два запроса complete для M01 дают суммарно 100</td></tr><tr><td>R17</td><td>После отмены M01 доступно 10/5</td></tr><tr><td>R18</td><td>При 409 статус, журнал и запасы совпадают со снимком до команды</td></tr><tr><td>R19</td><td>Новая партия даёт 10 топлива, 5 пайков и 0 кредитов</td></tr><tr><td>R21</td><td>Снимок · CatalogRevision · GET рейса · Старая редакция 1, каталог 2</td></tr><tr><td>R22</td><td>Явное принятие · expectedCatalogRevision · POST replacements · С редакцией 1 получаем 409 catalog_revision_mismatch</td></tr><tr><td>R23</td><td>Атомарность · StockItem, Expedition, события · POST replacements + GET · При дефиците состояние до и после совпадает</td></tr><tr><td>R24</td><td>Связь попыток · ReplacesExpeditionId · GET нового рейса · Ссылка равна исходному ID</td></tr></tbody></table></div><h3>Контрольные прогоны</h3><div class="table-wrap"><table><thead><tr><th scope="col">Сценарий</th><th scope="col">Условие</th><th scope="col">Ожидаемый результат</th></tr></thead><tbody><tr><td>А · Сохранить условия</td><td>С1, С3, С4</td><td>Снимок 6/2 и 100. После M01 доступно 4/3. Выполнение M03 даёт итог 190 и остаток 0/0.</td></tr><tr><td>Б · Подтвердить замену</td><td>С2, С3, С5</td><td>Исходная M01 отменена, новая M01 ссылается на неё. Снимок 7/3 и 160. После рейса остаток 3/2, M03 недоступна.</td></tr><tr><td>Граница</td><td>Запас 7/3</td><td>Замена проходит. На складе 7/3, резерв 7/3, доступно 0/0. После запуска запас 0/0.</td></tr><tr><td>Дефицит обоих ресурсов</td><td>Запас 6/2</td><td>409 insufficient_supplies. Старый рейс prepared, резерв 6/2, доступно 0/0. В истории только подготовка.</td></tr><tr><td>Дефицит пайков</td><td>Запас 8/2</td><td>409 insufficient_supplies. Не хватает одного пайка. Старый резерв 6/2, доступно 2/0.</td></tr><tr><td>Устаревшая редакция</td><td>Каталог 2, запрос с 1</td><td>409 catalog_revision_mismatch. Исходный рейс и запасы сохраняются.</td></tr><tr><td>Повтор завершения</td><td>Рейс completed</td><td>409 invalid_transition. Награда учтена один раз. В журнале остаются три события.</td></tr></tbody></table></div><p>Шесть проверок: ветвь А, ветвь Б, граница 7/3, дефицит 8/2, устаревшая редакция, повтор завершения. Дополнительно проверить повторное чтение после перезапуска.</p><h3>Ответы испытания</h3><ol class="steps"><li>Запасы, активный ID, статус и журнал. Отказ считается атомарным, если данные сохранили предыдущее состояние.</li><li>Нет. Проверить поле code и предусловие. Оба случая конфликтуют с текущим состоянием. Поле code различает причины.</li></ol></section><section id="lab-8"><h2>ЛР08. Матрица проектных решений</h2><h3>Эталон по донесению</h3><div id="matrix-live" aria-live="polite"><div class="table-wrap"><table><thead><tr><th scope="col">Критерий при запасе 10/5</th><th scope="col">А · сохранить условия</th><th scope="col">Б · заменить рейс</th></tr></thead><tbody><tr><td>Награда по M01</td><td>100</td><td>160</td></tr><tr><td>Награда за партию</td><td>190</td><td>160</td></tr><tr><td>Число рейсов</td><td>2</td><td>1</td></tr><tr><td>Сложность реализации</td><td>Запуск по снимку</td><td>Замена в одной транзакции</td></tr><tr><td>Результат по цели</td><td>Лучший результат</td><td>Меньше 190</td></tr></tbody></table></div><p>После старой M01 остаётся 4/3 для M03. При цели максимизировать награду за партию выгодна ветвь А.</p></div><p>С4 → выбрать А. С5 при наличии 7/3 → выбрать Б. При запасе 6/2 или 8/2 замена недоступна, нужно согласовать новое ограничение или снабжение.</p><h3>Ответы испытания</h3><ol class="steps"><li>А, 190 за два рейса. Старая M01 оставляет ресурс для M03. Сумма 100 + 90 = 190.</li><li>Б при достаточном запасе. А даёт по M01 100. Б даёт 160, если замена допустима.</li></ol></section><p><a href="https://github.com/OlgaKraven/2026-PIDIS-lab/tree/main/content/course-3/semester-5">Лабораторные первого семестра ПиДИС</a> · <a href="https://github.com/OlgaKraven/2026-PIDIS-lab/blob/main/inputs/course-3/wms-case.md">Учебный кейс WMS «Маршрут»</a></p></article></body></html>

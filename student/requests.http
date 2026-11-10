@@ -1,0 +1,65 @@
+@base = http://127.0.0.1:5201
+@gameId = вставить-id-партии
+@expeditionId = вставить-activeExpedition.id
+
+### Запуск заготовки
+GET {{base}}/healthz
+
+### Исходные наборы
+GET {{base}}/study/fixtures
+
+### Создать отдельную партию после донесения
+POST {{base}}/api/demo/games?scenario=briefing
+
+### Свободная партия для ручной подготовки
+POST {{base}}/api/demo/games
+
+### Каталог
+GET {{base}}/api/missions
+X-Game-Id: {{gameId}}
+
+### Запасы и баланс
+GET {{base}}/api/game
+X-Game-Id: {{gameId}}
+
+### Подготовить миссию в свободной партии
+POST {{base}}/api/expeditions
+X-Game-Id: {{gameId}}
+Content-Type: application/json
+
+{"missionId":"M01"}
+
+### Карточка рейса
+GET {{base}}/api/expeditions/{{expeditionId}}
+X-Game-Id: {{gameId}}
+
+### Запустить рейс
+POST {{base}}/api/expeditions/{{expeditionId}}/transitions
+X-Game-Id: {{gameId}}
+Content-Type: application/json
+
+{"action":"launch"}
+
+### Завершить рейс. Выполнить повторно для проверки
+POST {{base}}/api/expeditions/{{expeditionId}}/transitions
+X-Game-Id: {{gameId}}
+Content-Type: application/json
+
+{"action":"complete"}
+
+### Отменить подготовку в свободной партии
+POST {{base}}/api/expeditions/{{expeditionId}}/transitions
+X-Game-Id: {{gameId}}
+Content-Type: application/json
+
+{"action":"cancel"}
+
+### Ветвь Б. Создать отдельный набор с нехваткой пайков
+POST {{base}}/api/demo/games?scenario=rations
+
+### Ветвь Б. Подтвердить редакцию. Для каждой проверки взять ID из отдельной партии
+POST {{base}}/api/expeditions/{{expeditionId}}/replacements
+X-Game-Id: {{gameId}}
+Content-Type: application/json
+
+{"expectedCatalogRevision":2}

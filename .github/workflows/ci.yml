@@ -1,0 +1,60 @@
+name: Build and verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Publish simulator
+        run: dotnet publish OrbitalOutpost.csproj -c Release -o "$RUNNER_TEMP/orbital-outpost"
+
+      - name: Verify simulator over HTTP
+        run: node checks/verify.mjs "$RUNNER_TEMP/orbital-outpost"
+
+      - name: Verify E01 reference for catalogs 7/3 and 8/4
+        shell: bash
+        run: |
+          dotnet publish launch-reference/LaunchReference.csproj -c Release -o "$RUNNER_TEMP/launch-reference"
+          base_url=http://127.0.0.1:5201
+          for catalog in 7/3 8/4; do
+            transfer=false
+            if [[ "$catalog" == 8/4 ]]; then transfer=true; fi
+
+            dotnet "$RUNNER_TEMP/launch-reference/LaunchReference.dll" --urls "$base_url" --LaunchTransfer "$transfer" &
+            server_pid=$!
+            trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+            curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 --max-time 2 "$base_url/api/game" -o /dev/null
+            pwsh -NoProfile -File student/first-api/Check-E01.ps1 -BaseUrl "$base_url" -Catalog "$catalog"
+            kill "$server_pid"
+            wait "$server_pid" || true
+            trap - EXIT
+          done
+
+      - name: Upload verified build
+        uses: actions/upload-artifact@v7
+        with:
+          name: orbital-outpost
+          path: ${{ runner.temp }}/orbital-outpost/
+          if-no-files-found: error

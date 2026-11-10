@@ -1,0 +1,9 @@
+{
+  "fuel": 10,
+  "rations": 5,
+  "missions": [
+    { "id": "M01", "title": "Ремонт антенны", "rewardCredits": 100, "cost": { "fuel": 6, "rations": 2 } },
+    { "id": "M02", "title": "Дальний ретранслятор", "rewardCredits": 150, "cost": { "fuel": 8, "rations": 1 } },
+    { "id": "M03", "title": "Доставка к маяку", "rewardCredits": 90, "cost": { "fuel": 4, "rations": 3 } }
+  ]
+}

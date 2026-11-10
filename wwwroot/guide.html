@@ -1,0 +1,347 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Пошаговый разбор проекта</title><style>* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+:root {
+  --space: #0b2630;
+  --deep: #103641;
+  --ink: #142e34;
+  --muted: #485e5b;
+  --paper: #f3f5ed;
+  --card: #fcfdf8;
+  --line: #d5dfd2;
+  --mint: #bce8bc;
+  --gold: #f0ca86;
+  --error: #8b352d;
+  --width: 1260px;
+  font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+body { margin: 0; }
+a { color: inherit; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .66; }
+:focus-visible { outline: 3px solid #c27e26; outline-offset: 4px; }
+.skip { position: absolute; left: 12px; top: -80px; z-index: 9; padding: 10px 18px; background: white; }
+.skip:focus { top: 12px; }
+.site-header, .hero, .station-nav, main, footer { width: min(calc(100% - 60px), var(--width)); margin-inline: auto; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 78px; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 7px 22px; }
+.site-header nav a { padding-block: 7px; text-decoration: none; border-bottom: 2px solid transparent; color: var(--muted); }
+.site-header nav a[aria-current="page"] { border-color: #498163; color: var(--ink); font-weight: 700; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 750; white-space: nowrap; }
+.logo { display: inline-grid; place-items: center; background: var(--space); color: var(--mint); width: 36px; height: 36px; border-radius: 50%; font-size: 25px; }
+.hero { position: relative; display: grid; grid-template-columns: 1fr 1.13fr; overflow: hidden; min-height: 368px; border-radius: 27px 27px 27px 5px; background: var(--space); color: #eef6e9; }
+.hero-copy { padding: clamp(26px, 4.4vw, 61px); z-index: 1; align-self: center; }
+.signal { display: flex; align-items: center; gap: 10px; color: #c1d8c9; margin: 0 0 16px; font-size: .88rem; }
+.signal span { width: 9px; height: 9px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px #bce8bc26; }
+h1, h2, h3, .score strong { font-family: Bahnschrift, "Segoe UI", system-ui, sans-serif; }
+h1 { margin: 0; font-size: clamp(2.55rem, 5vw, 4.9rem); line-height: .99; letter-spacing: -.045em; font-weight: 680; }
+h1 span { color: var(--gold); }
+.hero-copy > p:not(.signal) { margin-block: 19px 25px; max-width: 37ch; color: #c7ddda; }
+.hero-actions, .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.button { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; min-height: 43px; border: 1px solid var(--line); border-radius: 7px; text-decoration: none; font-weight: 700; background: var(--card); color: var(--ink); line-height: 1.3; text-align: center; }
+.button:hover { background: #e5eee1; }
+.button.primary { background: var(--mint); color: #132f2c; border-color: #a3cda3; }
+.button.primary:hover { background: #d8f3cb; }
+.button.ghost { color: #eef6e9; background: transparent; border-color: #66858a; }
+.button.ghost:hover { background: #214650; }
+.star-map { position: relative; min-height: 270px; }
+.orbit-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-node { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #bce8bc9e; color: #f4faea; background: #153b43; font: 700 .9rem Bahnschrift, sans-serif; text-decoration: none; box-shadow: 0 0 0 4px #153b4380; }
+.map-node:hover, .map-node[aria-current="step"] { color: var(--space); background: var(--gold); border-color: var(--gold); }
+.map-node.done { background: var(--mint); color: var(--space); }
+.map-caption { display: flex; justify-content: space-between; gap: 10px; position: absolute; bottom: 0; padding: 10px 18px; color: #e3f0e3; background: #09242bcf; width: 100%; font-size: .81rem; }
+.station-nav { display: grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap: 6px; margin-block: 17px 26px; }
+.station-nav a { display: grid; grid-template-columns: 24px auto; gap: 7px; align-items: center; min-height: 48px; padding: 7px 8px; text-decoration: none; border-bottom: 2px solid var(--line); font-size: .84rem; color: var(--muted); }
+.station-nav a:hover, .station-nav a[aria-current="step"] { border-color: #437c61; color: var(--ink); background: #e4eddf; }
+.station-nav .number { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e2e8dc; font-weight: 700; color: var(--ink); }
+.station-nav .done .number { background: var(--mint); }
+main { margin-bottom: 48px; min-height: 300px; }
+.workspace, .sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .89fr); gap: 18px; align-items: start; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: clamp(17px, 2.8vw, 33px); min-width: 0; }
+.panel > :first-child, .reference > :first-child { margin-top: 0; }
+.kicker { color: #396e55; font-size: .9rem; margin: 0 0 7px; font-weight: 700; }
+h2 { font-size: clamp(1.75rem, 3.4vw, 2.95rem); margin: 0 0 12px; line-height: 1.12; letter-spacing: -.032em; overflow-wrap: anywhere; }
+h3 { font-size: 1.2rem; margin: 21px 0 7px; line-height: 1.2; }
+p { margin: 0 0 12px; }
+.brief { border-left: 4px solid #619279; padding: 12px 15px; background: #eaf1e7; margin-block: 19px; }
+.brief strong { display: block; }
+.steps { padding-left: 23px; margin: 7px 0 16px; }
+.steps li + li { margin-top: 6px; }
+.note { color: var(--muted); }
+.draft-label { display: block; margin-top: 17px; font-weight: 700; }
+#draft { display: block; width: 100%; margin: 5px 0; padding: 9px; resize: vertical; border: 1px solid #729087; border-radius: 6px; color: var(--ink); background: white; }
+.draft-preview { margin-bottom: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.example { border-left: 3px solid #b58a48; background: #faf2e0; padding: 10px 13px; }
+.station-explanation summary { cursor: pointer; margin-bottom: 7px; }
+.brief p { margin: 9px 0 0; }
+.worksheet-panel { margin-top: 18px; }
+.worksheet + .worksheet { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 8px; }
+.worksheet table { min-width: 600px; }
+.worksheet td { padding: 6px; }
+.worksheet textarea, .primer-json textarea { width: 100%; min-width: 105px; color: var(--ink); background: white; border: 1px solid #789288; border-radius: 5px; padding: 7px; resize: vertical; }
+.text-button { border: 0; padding: 0; color: #285b48; background: none; text-decoration: underline; }
+.case-selector { margin-block: 4px 18px; background: #e4eddf; padding: 13px 16px; border-radius: 10px; }
+.case-selector .note { margin: 8px 0 0; }
+.primer { width: 100%; }
+.primer-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.primer-tabs [aria-pressed="true"], #primer-variants [aria-pressed="true"] { background: var(--mint); border-color: #5d9272; }
+.primer-visual { margin: 12px 0; padding: clamp(12px, 2.5vw, 25px); border: 1px solid #31585b; border-radius: 11px; background: var(--space); color: #edf5e9; }
+.primer-visual p { color: #d4e5de; }
+.primer-visual pre { background: #153943; margin: 9px 0 0; }
+.primer-flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr)); gap: 10px; list-style: none; padding: 0; margin: 0; }
+.primer-flow li { min-height: 53px; display: grid; place-items: center; position: relative; text-align: center; border: 1px solid #648382; border-radius: 7px; padding: 7px; font-size: .9rem; overflow-wrap: anywhere; }
+.primer-flow .flow-active { background: var(--mint); color: var(--ink); font-weight: 700; }
+.primer-flow .flow-blocked { border-style: dashed; color: #b9c8c7; }
+.primer-flow .flow-blocked small { font-size: .77rem; }
+.primer-flow:not(.primer-structure) .flow-active::after { content: ""; position: absolute; height: 4px; width: 34%; bottom: 5px; left: 33%; border-radius: 4px; background: #267057; animation: packet 420ms ease-out both; }
+.primer-flow li:not(:last-child)::before { content: "›"; position: absolute; right: -10px; color: #bce8bc; z-index: 1; font-size: 19px; }
+.primer-structure li:not(:last-child)::before { content: "·"; }
+.relation-strip { margin: 8px 0 0; font-size: .85rem; }
+@keyframes packet { from { opacity: 0; transform: translateX(-70%); } to { opacity: 1; transform: translateX(0); } }
+.primer-paused .flow-active::after, .primer-paused .stock-track > * { animation-play-state: paused !important; }
+.primer-stock { display: grid; gap: 8px; max-width: 640px; }
+.stock-legend { display: flex; gap: 16px; margin: 0; font-size: .85rem; }
+.stock-legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; background: var(--mint); }
+.stock-legend span:first-child::before { background: var(--gold); }
+.stock-track { display: flex; height: 13px; background: #284951; border-radius: 8px; overflow: hidden; }
+.stock-track > * { width: var(--share); transform-origin: left; animation: stock-fill 420ms ease-out both; }
+.stock-track i { background: var(--gold); }
+.stock-track b { background: var(--mint); }
+@keyframes stock-fill { from { opacity: .55; } to { opacity: 1; } }
+.primer-json { display: grid; max-width: 590px; gap: 7px; justify-items: start; margin: 10px 0; }
+.primer-json textarea { font-family: Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) {
+  .primer-flow .flow-active::after, .stock-track > * { animation: none !important; }
+}
+.section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.section-heading h2 { margin-bottom: 0; }
+.challenge { border: 0; padding: 0; margin: 18px 0 22px; min-inline-size: 0; }
+.challenge legend { padding: 0; font-weight: 700; margin-bottom: 9px; }
+.choice { display: block; width: 100%; text-align: left; padding: 9px 11px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 6px; background: #f1f5ed; color: var(--ink); }
+.choice:hover { border-color: #588870; }
+.choice[data-selected="true"] { border-color: #ad6f2e; background: #fbefd7; }
+.choice[data-correct="true"] { border-color: #629779; background: #def0dc; }
+.feedback { min-height: 26px; color: var(--muted); margin-block: 6px 0; }
+.feedback.error, .error { color: var(--error); }
+.numeric { display: flex; flex-wrap: wrap; align-items: end; gap: 7px; }
+.numeric label { display: grid; color: var(--muted); font-size: .9rem; }
+input[type="number"] { width: 130px; padding: 8px; border: 1px solid #729087; border-radius: 5px; background: white; color: var(--ink); }
+.progress-track { height: 7px; border-radius: 6px; overflow: hidden; background: #e2eadf; margin-bottom: 14px; }
+.progress-track span { height: 100%; display: block; width: var(--progress); background: #548a6c; }
+.table-wrap { overflow-x: auto; margin-bottom: 15px; }
+table { border-collapse: collapse; text-align: left; width: 100%; font-size: .94rem; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+th { background: #e8efe4; font-weight: 750; }
+td { overflow-wrap: anywhere; }
+.score { display: flex; justify-content: space-between; align-items: center; border-radius: 11px; background: var(--deep); color: #f2f8ed; padding: 12px 15px; margin-bottom: 12px; }
+.score strong { font-size: 2.15rem; color: var(--gold); line-height: 1; }
+.missions { margin: 14px 0; }
+.mission { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 13px; border-top: 1px solid var(--line); padding: 13px 0; }
+.mission h3 { margin: 0; }
+.mission p { margin-bottom: 3px; }
+.mission-id { color: #3b7158; margin-right: 6px; font-size: .83rem; font-weight: 700; }
+.phase { display: inline-flex; gap: 6px; align-items: center; background: #e4efdf; border-radius: 20px; padding: 4px 10px; font-size: .84rem; }
+.phases { display: flex; flex-wrap: wrap; gap: 5px; padding: 0; margin: 10px 0 15px; list-style: none; }
+.phases .current { font-weight: 700; background: var(--mint); }
+.history { display: grid; gap: 7px; border-left: 2px solid #73a789; padding-left: 15px; margin: 12px 0; list-style: none; }
+.history time { color: var(--muted); font-size: .86rem; margin-left: 5px; }
+pre { overflow: auto; background: #102f39; color: #e9f5e8; border-radius: 8px; padding: 12px; font-size: .84rem; max-height: 340px; white-space: pre-wrap; overflow-wrap: anywhere; }
+code { overflow-wrap: anywhere; }
+.log { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.log button { border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; background: #eef4eb; color: var(--ink); font-size: .85rem; }
+.log button[aria-pressed="true"] { border-color: #478463; background: var(--mint); }
+[data-objective][aria-pressed="true"] { border-color: #478463; background: var(--mint); }
+.reference { max-width: 1050px; }
+.document header, .document article { max-width: 1020px; margin-inline: auto; }
+.document header { margin-block: 28px 18px; }
+.document article { margin-bottom: 36px; }
+.document h1 { font-size: clamp(2rem, 5vw, 3.8rem); }
+.document section + section { margin-top: 33px; border-top: 1px solid var(--line); padding-top: 25px; }
+.document nav { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 15px; }
+.document .panel { width: min(calc(100% - 24px), 1020px); }
+.document > header { width: min(calc(100% - 24px), 1020px); }
+.diagram { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0; }
+.diagram span { border: 1px solid #a7bba9; background: #eaf3e7; border-radius: 6px; padding: 6px 9px; }
+footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; color: var(--muted); font-size: .87rem; }
+@media (max-width: 1050px) { .station-nav { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+@media (max-width: 800px) {
+  .site-header, .hero, .station-nav, main, footer { width: calc(100% - 32px); }
+  .site-header { padding-block: 12px; flex-wrap: wrap; gap: 6px; }
+  .site-header nav { gap: 5px 13px; font-size: .87rem; }
+  .hero { grid-template-columns: 1fr 1fr; }
+  .hero-copy { padding: 25px 20px; }
+  .workspace, .sim-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 580px) {
+  .hero { grid-template-columns: 1fr; border-radius: 19px 19px 19px 4px; }
+  .hero-copy { padding: 25px 19px 19px; }
+  .star-map { min-height: 236px; }
+  .station-nav { grid-template-columns: repeat(2, minmax(0,1fr)); margin-bottom: 19px; }
+  .mission { grid-template-columns: 1fr; }
+  .mission button { justify-self: start; }
+  .map-node { width: 28px; height: 28px; }
+}
+@media print {
+  .document { background: white; }
+  .document nav { display: none; }
+  .document .panel { padding: 0; border: 0; width: 100%; }
+  .document section { break-inside: auto; }
+  .document tr { break-inside: avoid; }
+  .table-wrap { overflow: visible; }
+}
+
+/* The application and its in-context lessons share one palette. */
+.outpost-app {
+  --sim-bg: #0a1820;
+  --sim-panel: #142b36;
+  --sim-ink: #ecf6f3;
+  --sim-muted: #b7cdcf;
+  --sim-line: #3b5963;
+  --sim-mint: #a4efca;
+  --ink: var(--sim-ink);
+  --muted: var(--sim-muted);
+  --paper: var(--sim-bg);
+  --card: var(--sim-panel);
+  --line: var(--sim-line);
+  --mint: var(--sim-mint);
+  --error: #ffd0ad;
+  --width: 1110px;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 92% 0%, #12333c 0, var(--sim-bg) 55%);
+  color: var(--ink);
+}
+.outpost-app main:focus, .outpost-app #worksheets:focus, .outpost-app #sim-message:focus { outline: none; }
+.outpost-app .site-header { min-height: 65px; }
+.outpost-app .site-header nav a[aria-current="page"] { border-color: var(--mint); color: var(--mint); }
+.outpost-app .logo { border: 1px solid var(--line); }
+.outpost-app .skip { background: var(--card); }
+.outpost-app .kicker, .outpost-app .signal { color: var(--mint); }
+.outpost-app .button { color: var(--ink); background: #1c3743; border-color: #55727e; }
+.outpost-app .button:hover { background: #294b57; }
+.outpost-app .button.primary { color: #102a22; background: var(--mint); border-color: var(--mint); }
+.outpost-app .button.primary:hover { background: #c3f7db; }
+.outpost-app .button.ghost { background: transparent; }
+.outpost-app .text-button { color: var(--mint); }
+.outpost-app th { color: var(--ink); background: #213d49; }
+.outpost-app .choice, .outpost-app .diagram span { background: #10232d; border-color: var(--line); }
+.outpost-app .choice:hover { border-color: var(--mint); }
+.outpost-app .choice[data-correct="true"] { background: #1f4844; border-color: var(--mint); }
+.outpost-app .choice[data-selected="true"] { background: #41332b; border-color: var(--gold); }
+.outpost-app input[type="number"], .outpost-app textarea, .outpost-app select {
+  background: #0c202b; color: var(--ink); border-color: #5e7b83;
+}
+.outpost-app .brief, .outpost-app .example { background: #0e222c; color: var(--ink); }
+.outpost-app .progress-track { background: #28434d; }
+.outpost-app .progress-track span { background: var(--mint); }
+.outpost-app .station-nav a:hover, .outpost-app .station-nav a[aria-current="step"] {
+  color: var(--mint); background: #1b3945; border-color: var(--mint);
+}
+.outpost-app .station-nav .number { background: #28434d; color: var(--ink); }
+.outpost-app .station-nav .done .number { background: var(--mint); color: #102a22; }
+.outpost-app .map-note { color: var(--muted); padding-top: 16px; }
+.simulator-mode .hero, .simulator-mode .station-nav, .station-mode .hero, .project-map-mode .station-nav { display: none; }
+.station-mode .station-nav { margin-top: 4px; }
+.station-workspace h1, .reference h1 { font-size: clamp(1.85rem,4.5vw,3rem); margin-bottom: 12px; }
+.station-section { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; }
+.station-section h2 { font-size: clamp(1.25rem,3vw,1.65rem); }
+.station-section .primer { padding: 15px 0 0; border: 0; }
+.station-draft { margin-top: 18px; }
+.station-section .challenge { max-width: 730px; }
+
+.sim-shell {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: clamp(16px, 3.6vw, 37px);
+}
+.sim-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 11px;
+  margin-bottom: 16px;
+}
+.sim-heading p { margin: 0; font-weight: 700; font-size: .95rem; color: var(--mint); }
+.sim-eyebrow { margin-bottom: 7px; color: var(--mint); font-size: .87rem; font-weight: 650; }
+.sim-status { color: var(--mint); font-size: .94rem; margin-bottom: 11px; }
+.sim-status:empty { display: none; }
+.sim-status-error { color: var(--error); }
+.sim-progress { margin: 0 0 18px; }
+.sim-progress > div { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; }
+.sim-progress p { color: var(--muted); margin: 0; font-size: .89rem; }
+.sim-progress strong { color: var(--ink); margin-inline-start: 5px; }
+.sim-progress span { color: var(--muted); font-size: .84rem; }
+.sim-progress progress { width: 100%; height: 5px; display: block; margin-top: 8px; border: 0; accent-color: var(--mint); }
+.sim-progress progress::-webkit-progress-bar { background: #294550; border-radius: 3px; }
+.sim-progress progress::-webkit-progress-value { background: var(--mint); border-radius: 3px; }
+.sim-panel { min-width: 0; }
+.sim-panel h2 { font-size: clamp(1.55rem,4vw,2.65rem); }
+.sim-panel p { max-width: 76ch; }
+.sim-panel pre { background: #0b1f2a; border: 1px solid var(--line); }
+.sim-sources tbody th { background: transparent; }
+.sim-sources small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; line-height: 1.35; }
+.sim-sources th:not(:first-child), .sim-sources td { width: 15%; text-align: center; }
+.sim-actions { display: flex; flex-wrap: wrap; gap: 9px 17px; align-items: center; margin-top: 15px; }
+.sim-text-link { color: var(--muted); font-size: .92rem; text-underline-offset: 3px; }
+.sim-text-link:hover { color: var(--mint); }
+.sim-signal { padding-left: 22px; margin-block: 10px 15px; }
+.sim-signal li { padding-block: 2px; }
+.sim-signal span { margin-left: 8px; color: var(--muted); }
+.sim-code-note p { margin-bottom: 4px; }
+.sim-code-note pre { margin-top: 6px; }
+.sim-animation, .sim-log { border-top: 1px solid var(--line); padding-block: 9px; }
+.sim-animation summary, .sim-log summary { cursor: pointer; overflow-wrap: anywhere; }
+.sim-animation .primer { padding: 12px 0 0; border: 0; }
+.primer-application { border-left: 3px solid var(--mint); padding: 5px 0 5px 10px; }
+.outpost-app .primer-visual { background: #0d202b; border-color: var(--line); }
+.outpost-app .primer-flow li { min-height: 38px; border: 0; border-bottom: 2px solid var(--line); border-radius: 0; }
+.outpost-app .primer-flow .flow-active { color: var(--mint); background: transparent; border-color: var(--mint); }
+.outpost-app .primer-flow .flow-active::after { display: none; }
+.outpost-app .primer-tabs [aria-pressed="true"], .outpost-app #primer-variants [aria-pressed="true"],
+.outpost-app [data-objective][aria-pressed="true"] { color: #102a22; background: var(--mint); border-color: var(--mint); }
+.sim-prediction { display: grid; gap: 4px; }
+.sim-prediction span, .sim-prediction small, .sim-hint { color: var(--muted); }
+.sim-prediction textarea, .sim-journal-select select { border: 1px solid #5e7b83; border-radius: 6px; padding: 8px; }
+.sim-prediction textarea { width: min(100%,710px); resize: vertical; }
+.sim-inventory { margin: 10px 0 0; }
+.sim-inventory h3 { margin-top: 0; }
+.sim-balance { margin: 0; color: var(--muted); }
+.sim-balance strong { color: var(--gold); font-size: 1.2rem; }
+.sim-observation { border-left: 3px solid var(--mint); padding-left: 11px; }
+.sim-result { margin-top: 14px; }
+.sim-saved { color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+.sim-pick { border: 0; padding: 0; margin: 10px 0 0; min-inline-size: 0; }
+.sim-pick legend { margin-bottom: 3px; font-weight: 700; }
+.sim-option { display: flex; gap: 10px; align-items: start; border-bottom: 1px solid var(--line); padding: 9px 8px; cursor: pointer; min-height: 44px; }
+.sim-option:hover, .sim-option:has(input:checked) { background: #21414d; }
+.sim-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sim-option input { accent-color: var(--mint); margin: 5px 0 0; flex: 0 0 auto; }
+.sim-option small { display: block; color: var(--muted); font-size: .9rem; margin-top: 2px; }
+.sim-journal-select { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 13px; }
+.sim-journal-select label { display: grid; gap: 4px; max-width: 100%; }
+@media (max-width: 460px) {
+  .sim-signal span { display: block; margin-left: 0; }
+  .sim-panel th, .sim-panel td { padding-inline: 5px; }
+}
+</style></head><body class="document"><header><p class="kicker">Орбитальный форпост</p><h1>Пошаговый разбор проекта</h1><p>От учебного задания до реализации и проверки действующего API.</p><nav aria-label="Материалы"><a class="button" href="index.html#simulator-learn">Тренажёр API</a><a class="button" href="index.html#map">Карта ЛР01–ЛР08</a><a class="button" href="index.html#simulator-materials">Учебные материалы</a></nav></header><article class="panel"><section id="assignment"><h2>1. Полное задание</h2><p>Спроектировать и реализовать локальный прототип игры «Орбитальный форпост». Использовать ASP.NET Core Minimal API на .NET 10 и SQLite. Разработать восемь проектных артефактов, хранить снимки и события, реализовать команды подготовки, запуска, завершения и отмены. В интерфейсе показать каталог, изменение запасов, историю и результаты HTTP-запросов.</p><p>Проверить обе ветви после донесения, отмену, замену на границе запаса, недостаток ресурса, повтор команды, конкурентные действия и перезапуск. Представить исходный проект с инструкцией запуска, артефакты ЛР01–ЛР08 и протокол с запросами и наблюдаемыми значениями. Исходные правила и данные приведены в <a href="brief.html">досье</a>.</p></section><section id="files"><h2>2. Файлы для работы</h2><div class="table-wrap"><table><thead><tr><th scope="col">Материал</th><th scope="col">Как использовать</th></tr></thead><tbody><tr><td>Start-Outpost.cmd и run/</td><td>Запустить готовый проект для изучения результата</td></tr><tr><td>source/data/seed.json и source/data/schema.sql</td><td>Взять стартовые данные и сопоставить логическую модель с DDL</td></tr><tr><td>source/Models.cs, Program.cs и GameStore.cs</td><td>Проследить путь от HTTP-запроса до записи данных</td></tr><tr><td>source/wwwroot/</td><td>Открыть HTML, стили, задания и обработчики действий интерфейса</td></tr><tr><td>source/checks/verify.mjs</td><td>Выполнить проверку по HTTP с отдельной БД и перезапуском</td></tr><tr><td>Эталоны ЛР01–ЛР08</td><td>Сопоставить каждый артефакт с эталоном после выполнения</td></tr></tbody></table></div><p><a href="reference.html">Открыть эталоны лабораторных</a></p></section><section id="start"><h2>3. Запустить проект</h2><p><strong>Среда.</strong> Windows, ASP.NET Core Runtime 10 или .NET SDK 10, браузер. Для самостоятельной сборки нужен SDK, для автоматических проверок — Node.js 22+. Для просмотра квеста можно открыть index.html в браузере.</p><ol class="steps"><li>Распаковать архив целиком в отдельный каталог. Запустить Start-Outpost.cmd, оставить окно сервера открытым и перейти по адресу из окна запуска. По умолчанию используется http://127.0.0.1:5191.</li><li>На карте выбрать станцию 1. После чтения ситуации решить два задания. По кнопке «Свериться с эталоном» открыть готовый артефакт, затем вернуться к станции.</li><li>Открыть «Симулятор» и пройти маршрут E01. Для сравнения стратегий открыть «Сценарии» и выбрать «После донесения». Сверить склад 10/5, резерв 6/2, старую редакцию рейса и новую редакцию каталога.</li></ol><p><strong>Зачем.</strong> Первый прогон даёт ориентир для самостоятельной реализации. Готовая сборка использует настоящий сервер и создаёт файл данных при запуске.</p><p>При занятом порте можно запустить Start-Outpost.cmd 5193 и открыть адрес с этим портом. Сервер останавливается сочетанием Ctrl+C.</p></section><section id="labs"><h2>4. Решить восемь станций</h2><h3 id="step-1">4.1. Заинтересованные стороны</h3><p><strong>Вход.</strong> С1–С6, особенно С2 и С3 · Редактор прислал новые условия M01. Диспетчер спрашивает, кто может решить судьбу уже подготовленного рейса.</p><p><strong>Приём.</strong> Карта участников отделяет влияние на правило от интереса к результату. Основание берётся из источника, а полномочие проверяется по распоряжению.</p><p><strong>Пример.</strong> Для M03 кладовщик подтверждает наличие пайков, а диспетчер решает, готовить ли рейс. Доступ к данным о грузе и право дать команду — разные признаки.</p><p><strong>Действие.</strong> По С1–С6 составить карту участников. Затем подготовить два вопроса, ответы на которые меняют правило или форму команды API.</p><p><strong>Зачем.</strong> Решение о замене влияет на резерв. Нужно знать, кто подтверждает замену и кто отвечает за содержание каталога.</p><p><strong>Следующий шаг.</strong> Перенести ID источников и открытые вопросы в реестр требований. <a href="reference.html#lab-1">Эталон ЛР01</a>.</p><h3 id="step-2">4.2. Реестр требований</h3><p><strong>Вход.</strong> Б1–Б5 и С1–С6 · Из С2 известно, что изменились расход и награда. В сообщении встречается просьба «менять рейсы быстрее».</p><p><strong>Приём.</strong> Требование описывает одно обязательство, указывает источник и допускает проверку. Неизмеримую фразу фиксируют как вопрос.</p><p><strong>Пример.</strong> «Показывать остаток» можно уточнить через наблюдаемый результат: GET состояния возвращает физический, зарезервированный и доступный запас по каждому виду.</p><p><strong>Действие.</strong> Собрать 16–20 записей из исходного брифа и С1–С6. Добавить сохранение снимка, явное подтверждение и отказ без изменения данных.</p><p><strong>Зачем.</strong> У каждой операции API появляется предметное основание и способ приёмки.</p><p><strong>Следующий шаг.</strong> Использовать ID требований в историях и проверках. <a href="reference.html#lab-2">Эталон ЛР02</a>.</p><h3 id="step-3">4.3. Пользовательские истории</h3><p><strong>Вход.</strong> Реестр ЛР02, С3 и С6 · Проверяющий хочет повторить успешную замену и отказ при нехватке, используя одинаковые запросы.</p><p><strong>Приём.</strong> Критерий приёмки фиксирует состояние до действия, команду и наблюдаемый результат. Меняется одно существенное условие за проверку.</p><p><strong>Пример.</strong> Для M03 при доступном запасе 4/3 подготовка проходит. При 4/2 отказ объясняется нехваткой одного пайка.</p><p><strong>Действие.</strong> Переработать восемь черновых фраз. Описать пять историй по старому рейсу, замене и проверке. У каждой зафиксировать успешный и граничный или ошибочный случай.</p><p><strong>Зачем.</strong> Условия приёмки становятся первыми сценариями HTTP-проверки.</p><p><strong>Следующий шаг.</strong> Из историй выделить объекты и изменяемые значения. <a href="reference.html#lab-3">Эталон ЛР03</a>.</p><h3 id="step-4">4.4. Глоссарий и сущности</h3><p><strong>Вход.</strong> С1, С2, С6 и истории ЛР03 · M01 есть в каталоге один раз. При замене старый рейс закрывается и появляется новый. Нужно сохранить объяснение этой истории.</p><p><strong>Приём.</strong> Сущность имеет различимые экземпляры и свой жизненный цикл. Версия может быть атрибутом текущего каталога. Историю рейса задают его снимок и события.</p><p><strong>Пример.</strong> У M03 может быть одна запись каталога и две попытки, если первая отменена. Резерв выводится из подготовленной попытки, а не требует второго независимого числа.</p><p><strong>Действие.</strong> Классифицировать не менее 10 кандидатов. Для спорных случаев записать, какие запросы требуют отдельной сущности и какие достаточно выразить полем или вычислением.</p><p><strong>Зачем.</strong> Правильные границы сущностей позволяют представить текущий каталог и обе попытки без потери данных.</p><p><strong>Следующий шаг.</strong> Использовать термины в правилах и схеме. <a href="reference.html#lab-4">Эталон ЛР04</a>.</p><h3 id="step-5">4.5. Бизнес-правила</h3><p><strong>Вход.</strong> С3, С6 и реестр ЛР02 · Поступили две команды. Первая просит заменить подготовленный рейс, вторая — отменить уже запущенный. Нужно решить, какие изменения допустимы.</p><p><strong>Приём.</strong> Правило связывает состояние и команду с предусловием и эффектом. Атомарная замена закрывает исходную попытку и создаёт новую в одной транзакции.</p><p><strong>Пример.</strong> При обычной отмене подготовленной M03 физический запас не списывается. Освобождается только её резерв. После запуска отмена отклоняется.</p><p><strong>Действие.</strong> Составить минимум 10 правил и таблицу переходов. Для замены указать проверку редакции, запасов, состояния и атомарность.</p><p><strong>Зачем.</strong> Сервер должен одинаково применять правила из симулятора и при прямом HTTP-вызове.</p><p><strong>Следующий шаг.</strong> По каждому изменению состояния определить хранимые поля и журнал. <a href="reference.html#lab-5">Эталон ЛР05</a>.</p><h3 id="step-6">4.6. Атрибуты и история</h3><p><strong>Вход.</strong> С1, С2, С6, глоссарий и правила · В каталоге уже стоит 160, а в карточке исходной экспедиции — 100. Проверьте, какие значения нужны серверу в момент запуска.</p><p><strong>Приём.</strong> Текущий каталог, снимок рейса и производные значения имеют разные источники. По снимку выполняются списание и начисление.</p><p><strong>Пример.</strong> Если текущая стоимость M03 меняется с 4 топлива на 5 после подготовки, запуск читает 4 из строки снимка. Доступный запас вычисляется из текущего остатка и резерва.</p><p><strong>Действие.</strong> Составить словарь полей. Отметить единицы, обязательность и источники. Задать ключи редакции и связи замены, затем рассчитать запасы для 10/5 и 7/3.</p><p><strong>Зачем.</strong> От состава и происхождения полей зависит, можно ли восстановить условия уже выполненного рейса.</p><p><strong>Следующий шаг.</strong> Превратить поля, расчёты и ограничения в проверки API. <a href="reference.html#lab-6">Эталон ЛР06</a>.</p><h3 id="step-7">4.7. Ревизия и трассировка</h3><p><strong>Вход.</strong> С3, С6, реестр и словарь полей · Запрос замены вернул 409, но проверяющий увидел второе событие у старого рейса. Разберите, где нарушен контракт.</p><p><strong>Приём.</strong> Проверка отказа сопоставляет состояние до и после. Код 409 подтверждает конфликт, а чтение запасов и журнала подтверждает атомарность.</p><p><strong>Пример.</strong> При повторном завершении M03 сравниваются баланс и история. Если ответ 409, но баланс вырос, правило всё равно нарушено.</p><p><strong>Действие.</strong> Связать не менее 12 требований с моделью и маршрутами. Описать шесть проверок и исполнить ветвь с дефицитом через HTTP.</p><p><strong>Зачем.</strong> Трасса позволяет локализовать разрыв между заявленным правилом, схемой и поведением сервера.</p><p><strong>Следующий шаг.</strong> Использовать наблюдаемые результаты в матрице решений. <a href="reference.html#lab-7">Эталон ЛР07</a>.</p><h3 id="step-8">4.8. Матрица проектных решений</h3><p><strong>Вход.</strong> С4–С6 и протокол ЛР07 · На совещании сравнивают суммарную награду и результат за один рейс. Смена цели может изменить решение даже при том же запасе.</p><p><strong>Приём.</strong> Сначала отсекаются варианты, нарушающие обязательное условие. Затем сравниваются оставшиеся решения по прозрачным критериям.</p><p><strong>Пример.</strong> Если обязательна доставка двумя рейсами, одноходовый вариант сразу исключается. Если оба допустимы, сравниваются награда, стоимость и трудоёмкость.</p><p><strong>Действие.</strong> Сравнить ветви А и Б по четырём критериям. Задать шкалу и веса, проверить смену цели на 150 по M01 за один рейс. Записать выбранное решение и ограничение его применимости.</p><p><strong>Зачем.</strong> Одна стратегия выгоднее по партии, другая отвечает изменённому обязательству. Проектное решение должно объяснить, почему меняется выбор.</p><p><strong>Следующий шаг.</strong> Реализовать общий контракт и выбранное поведение, затем пройти приёмку из справочника. <a href="reference.html#lab-8">Эталон ЛР08</a>.</p></section><section id="build"><h2>5. Реализовать прототип</h2><h3>5.1. Инициализировать ASP.NET Core</h3><p>Открыть PowerShell в каталоге исходников. Для собственного проекта создать пустой Web-проект, подключить Microsoft.Data.Sqlite и добавить файл начальных данных.</p><pre><code>dotnet new web -n MyOutpost -f net10.0
+cd MyOutpost
+dotnet add package Microsoft.Data.Sqlite --version 10.0.12</code></pre><p><strong>Зачем.</strong> Пустой Web-проект содержит необходимые типы Minimal API. Пакет нужен для создания соединения и выполнения SQL.</p><p><strong>Проверить.</strong> Проверить dotnet build. Для сверки целиком открыть OrbitalOutpost.csproj и Program.cs из образца.</p><h3>5.2. Подготовить схему и стартовый набор</h3><p>Сохранить schema.sql и seed.json в каталоге data. Из файла проекта образца перенести настройки копирования Content и None для этих файлов. В схеме сначала создать справочники и владельцев, затем зависимые таблицы и два уникальных индекса.</p><p><strong>Зачем.</strong> Разделение схемы и начальных данных позволяет воспроизвести одну и ту же партию без потери прошлых.</p><p><strong>Проверить.</strong> Выполнить dotnet build. В bin/Debug/net10.0/data должны появиться оба файла. Убедиться, что в seed.json три миссии и стартовый запас 10/5.</p><h3>5.3. Задать типы и запросы чтения</h3><p>В Models.cs создать входные PrepareRequest и TransitionRequest, затем типы ответа каталога, состояния и экспедиции. В GameStore.cs реализовать Initialize, NewGame, GetMissions, GetGame и общие методы транзакций. В Program.cs загрузить seed, вызвать Initialize и временно подключить только POST /api/demo/games, GET /api/missions и GET /api/game.</p><p><strong>Зачем.</strong> Контракт отделяет данные клиента от серверного состояния. Запас и баланс собираются из источников по формулам области.</p><p><strong>Проверить.</strong> Выполнить dotnet run. Отправить первые четыре строки блока PowerShell из раздела 6, используя адрес запуска. Сверить три миссии. GET /api/game с тем же заголовком должен вернуть onHand и available 10/5, reserved 0/0, credits 0.</p><h3>5.4. Реализовать подготовку и переходы</h3><p>В GameStore.Prepare открыть недеферированную транзакцию, проверить миссию, активный слот и запас, записать экспедицию, снимок стоимости и событие. В Transition выбрать разрешённый переход из пары «текущее состояние / команда», при запуске списать снимок, затем записать состояние и событие.</p><p><strong>Зачем.</strong> Одна транзакция охватывает чтение предусловий и запись. Уникальные индексы дополнительно закрепляют один активный и один завершённый рейс по миссии.</p><p><strong>Проверить.</strong> До подключения маршрутов сверить таблицу переходов со switch в Transition. В Write должны входить проверки, запись статуса, списание и событие. После подключения маршрутов в шаге 5.5 проверить подготовку M01 (на складе 10/5, резерв 6/2), первый launch (на складе 4/3) и повторный launch (409).</p><h3>5.5. Подключить маршруты и ошибки</h3><p>Сгруппировать маршруты через MapGroup("/api"). Заголовок X-Game-Id определяет партию. Для подготовки вернуть 201 и Location, для перехода — 200 с новым состоянием. В ошибках вернуть 400, 404 или 409 по контракту.</p><p><strong>Зачем.</strong> Клиент может открыть созданную запись по Location. Предметный конфликт отличим от неверного формата и отсутствующего объекта.</p><p><strong>Проверить.</strong> Подготовить M01 и прочитать Location. Отправить повторную подготовку, проверить статус и код active_expedition.</p><h3>5.6. Связать интерфейс с API</h3><p>В wwwroot добавить страницу, стили и JavaScript. При старте партии сохранить id, передавать его заголовком. После команды перечитать состояние и выбранную экспедицию. Для истории отобразить события в порядке sequence.</p><p><strong>Зачем.</strong> Интерфейс показывает результат проверки сервера. Журнал HTTP связывает кнопку с реальным запросом и ответом.</p><p><strong>Проверить.</strong> В браузере проверить, что запуск меняет оба вида остатков и добавляет событие «В полёте». Выполнить тот же запрос из PowerShell.</p><h3>5.7. Сохранить доказательства и сверить</h3><p>Выполнить обе стратегии из свежих партий, затем отдельную проверку снимка. Зафиксировать запрос, статус и сравнение значений. Сверить артефакты каждой станции с эталоном.</p><p><strong>Зачем.</strong> Сценарии отделяют ошибки данных и сервера от визуальных эффектов клиента.</p><p><strong>Проверить.</strong> В учебных ветвях получить 190/0/0 и 160/3/2. Отклонить повторный complete и сохранить снимок исходной M01.</p><h3>5.8. Реализовать замену по принятой редакции</h3><p>В GameStore открыть транзакцию записи. Прочитать исходный рейс и текущую миссию, сравнить редакции и проверить каждый ресурс после учёта освобождаемого резерва. Записать отмену и новый рейс со ссылкой на исходный. Из Program.cs вернуть 201 и Location.</p><p><strong>Зачем.</strong> Состояние старого рейса и создание нового изменяются совместно. Клиент принимает конкретную редакцию, а сервер хранит цену и награду.</p><p><strong>Проверить.</strong> В наборе 7/3 замена проходит. В наборе 8/2 сверить 409 insufficient_supplies, прежний ID, статус prepared, резерв 6/2 и одно событие.</p><h3>Запуск исходников</h3><p>Из каталога source в распакованном архиве:</p><pre><code>dotnet restore
+dotnet run --no-launch-profile --urls http://127.0.0.1:5191</code></pre></section><section id="http"><h2>6. Контракт и контрольный запрос</h2><div class="table-wrap"><table><thead><tr><th scope="col">Маршрут</th><th scope="col">Вход</th><th scope="col">Успех</th><th scope="col">Ошибки</th></tr></thead><tbody><tr><td>POST /api/demo/games?scenario=briefing</td><td>Без тела, имя набора в query. Для переноса E01 указать launch-transfer</td><td>200 и id партии</td><td>400</td></tr><tr><td>GET /api/missions</td><td>X-Game-Id</td><td>200 и каталог</td><td>400/404</td></tr><tr><td>GET /api/game</td><td>X-Game-Id</td><td>200 и состояние партии</td><td>400/404</td></tr><tr><td>POST /api/expeditions</td><td>X-Game-Id и {&quot;missionId&quot;:&quot;M01&quot;}</td><td>201, Location и данные рейса</td><td>400/404/409</td></tr><tr><td>GET /api/expeditions/{id}</td><td>X-Game-Id и UUID рейса</td><td>200, снимок и история</td><td>400/404</td></tr><tr><td>POST /api/expeditions/{id}/transitions</td><td>X-Game-Id и {&quot;action&quot;:&quot;launch&quot;}</td><td>200 и обновлённый рейс</td><td>400/404/409</td></tr><tr><td>POST /api/expeditions/{id}/replacements</td><td>X-Game-Id и {&quot;expectedCatalogRevision&quot;:2}</td><td>201, Location и новый рейс со ссылкой на старый</td><td>400/404/409</td></tr><tr><td>POST /api/demo/catalog-revision</td><td>X-Game-Id, контролируемая правка M01</td><td>200, цена 7/3 и награда 160</td><td>400/404</td></tr></tbody></table></div><p><a href="openapi.json">Контракт в формате OpenAPI</a></p><p>Запустить сервер и открыть второе окно PowerShell. Следующий блок выполняется целиком и воспроизводит первый рейс.</p><pre><code>$base = &#39;http://127.0.0.1:5191/api&#39;
+$party = Invoke-RestMethod -Method Post -Uri &quot;$base/demo/games&quot;
+$headers = @{ &#39;X-Game-Id&#39; = $party.id }
+Invoke-RestMethod -Uri &quot;$base/missions&quot; -Headers $headers
+$expedition = Invoke-RestMethod -Method Post -Uri &quot;$base/expeditions&quot; -Headers $headers `
+  -ContentType &#39;application/json&#39; -Body &#39;{&quot;missionId&quot;:&quot;M01&quot;}&#39;
+$transition = &quot;$base/expeditions/$($expedition.id)/transitions&quot;
+Invoke-RestMethod -Uri &quot;$base/game&quot; -Headers $headers
+Invoke-RestMethod -Method Post -Uri $transition -Headers $headers `
+  -ContentType &#39;application/json&#39; -Body &#39;{&quot;action&quot;:&quot;launch&quot;}&#39;
+Invoke-RestMethod -Method Post -Uri $transition -Headers $headers `
+  -ContentType &#39;application/json&#39; -Body &#39;{&quot;action&quot;:&quot;complete&quot;}&#39;
+Invoke-RestMethod -Uri &quot;$base/game&quot; -Headers $headers | ConvertTo-Json -Depth 8
+</code></pre><p>В итоговом ответе credits = 100, onHand = 4/3. В журнале рейса три события. Повторить запрос complete и проверить статус 409, затем повторить GET и сверить прежние значения.</p></section><section id="acceptance"><h2>7. Прогнать контрольные сценарии</h2><ol class="steps"><li>В «Сценариях» открыть «После донесения». Запустить старую M01 и завершить её. Затем выполнить M03. Результат появится в сравнении стратегий.</li><li>Создать вторую партию «После донесения». Выбрать цель 150 по M01, затем подтвердить замену. В журнале открыть карточки обеих попыток. Запустить и завершить новый рейс, затем открыть сравнение.</li><li>Повторить замену при запасах 7/3, 6/2 и 8/2. Для отказов перечитать исходный рейс и запасы.</li><li>Проверить устаревшую редакцию и повтор завершения. Для обычной отмены открыть свободную партию, подготовить M01 и отменить.</li><li>Для независимой проверки перейти в корень распакованного архива и выполнить node source/checks/verify.mjs run. Скрипт проверяет в том числе два одновременных запроса и повторный запуск сервера на том же файле БД.</li></ol><div class="table-wrap"><table><thead><tr><th scope="col">Проверка</th><th scope="col">Условие</th><th scope="col">Ожидаемый результат</th></tr></thead><tbody><tr><td>А · Сохранить условия</td><td>С1, С3, С4</td><td>Снимок 6/2 и 100. После M01 доступно 4/3. Выполнение M03 даёт итог 190 и остаток 0/0.</td></tr><tr><td>Б · Подтвердить замену</td><td>С2, С3, С5</td><td>Исходная M01 отменена, новая M01 ссылается на неё. Снимок 7/3 и 160. После рейса остаток 3/2, M03 недоступна.</td></tr><tr><td>Граница</td><td>Запас 7/3</td><td>Замена проходит. На складе 7/3, резерв 7/3, доступно 0/0. После запуска запас 0/0.</td></tr><tr><td>Дефицит обоих ресурсов</td><td>Запас 6/2</td><td>409 insufficient_supplies. Старый рейс prepared, резерв 6/2, доступно 0/0. В истории только подготовка.</td></tr><tr><td>Дефицит пайков</td><td>Запас 8/2</td><td>409 insufficient_supplies. Не хватает одного пайка. Старый резерв 6/2, доступно 2/0.</td></tr><tr><td>Устаревшая редакция</td><td>Каталог 2, запрос с 1</td><td>409 catalog_revision_mismatch. Исходный рейс и запасы сохраняются.</td></tr><tr><td>Повтор завершения</td><td>Рейс completed</td><td>409 invalid_transition. Награда учтена один раз. В журнале остаются три события.</td></tr></tbody></table></div><div class="table-wrap"><table><thead><tr><th scope="col">ID</th><th scope="col">Действие</th><th scope="col">Ожидаемый результат</th><th scope="col">Требование</th></tr></thead><tbody><tr><td>РВ1</td><td>Подготовить M01 и сравнить физический, доступный запас и резерв</td><td>10/5, 4/3 и 6/2 соответственно</td><td>R07, R15</td></tr><tr><td>РВ2</td><td>Отменить подготовленную M01, затем запросить состояние</td><td>Доступно 10/5, резерв 0/0</td><td>R05, R17</td></tr><tr><td>РВ3</td><td>Подготовить M01, обновить каталог на 7/3 и 160, запустить и завершить рейс</td><td>Списано 6/2, получено 100</td><td>R09–R10</td></tr><tr><td>РВ4</td><td>Повторить complete для завершённой M01</td><td>409, 100 кредитов, три события</td><td>R16, R18</td></tr><tr><td>РВ5</td><td>Параллельно отправить два запроса подготовки при свободном слоте</td><td>Один 201, один 409, один резерв</td><td>R13, R18</td></tr><tr><td>РВ6</td><td>Перезапустить сервер на том же файле БД и открыть завершённую экспедицию</td><td>Доступны прежний баланс, запасы и события</td><td>R06, R11</td></tr></tbody></table></div><h3>Обратная трассировка</h3><div class="table-wrap"><table><thead><tr><th scope="col">Элемент</th><th scope="col">Обоснование</th></tr></thead><tbody><tr><td>rewardCreditsSnapshot</td><td>R10 фиксирует значение. R16 использует его в балансе</td></tr><tr><td>sequence</td><td>R06 требует порядок событий, R11 — сохранение каждого перехода</td></tr><tr><td>OneActiveExpedition</td><td>R13 ограничивает число активных рейсов. R18 требует атомарного отказа</td></tr><tr><td>OnHand</td><td>R07 требует расчёт доступности. R15 меняет физический остаток</td></tr></tbody></table></div></section><section id="handoff"><h2>8. Подготовить сдачу</h2><p>Приложить исходный проект, описание запуска, артефакты ЛР01–ЛР08 и протокол проверок. Для каждой проверки указать исходное состояние, действие, ожидаемый результат и фактический ответ. Сохранить снимки сравнения двух стратегий и истории M01 после правки каталога.</p><p>При переносе в другую область сначала заменить бриф и набор начальных данных. Затем заново вывести сущности, правила, снимки и ожидаемые результаты. Для «Мастерской» миссия становится заказом, стоимость — материалами, а завершение — сдачей изделия. Значения 190 и 150 относятся к орбитальному примеру.</p><p><a href="https://github.com/OlgaKraven/2026-PIDIS-lab/tree/main/content/course-3/semester-5">Лабораторные первого семестра ПиДИС</a> · <a href="https://github.com/OlgaKraven/2026-PIDIS-lab/blob/main/inputs/course-3/wms-case.md">Учебный кейс WMS «Маршрут»</a></p></section></article></body></html>

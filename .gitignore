@@ -1,0 +1,10 @@
+bin/
+obj/
+state/
+run/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+.env
+.env.local

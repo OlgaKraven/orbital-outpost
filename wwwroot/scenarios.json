@@ -1,0 +1,16 @@
+{
+  "revision": {
+    "id": "M01",
+    "title": "Ремонт антенны",
+    "rewardCredits": 160,
+    "cost": { "fuel": 7, "rations": 3 },
+    "revision": 2
+  },
+  "scenarios": [
+    { "id": "briefing", "title": "После донесения", "stock": { "fuel": 10, "rations": 5 }, "prepareMissionId": "M01", "applyRevision": true },
+    { "id": "boundary", "title": "Ровно по норме", "stock": { "fuel": 7, "rations": 3 }, "prepareMissionId": "M01", "applyRevision": true },
+    { "id": "shortage", "title": "Оба ресурса в дефиците", "stock": { "fuel": 6, "rations": 2 }, "prepareMissionId": "M01", "applyRevision": true },
+    { "id": "rations", "title": "Дефицит пайков", "stock": { "fuel": 8, "rations": 2 }, "prepareMissionId": "M01", "applyRevision": true },
+    { "id": "launch-transfer", "title": "Перенос E01: условия каталога 8/4", "stock": { "fuel": 10, "rations": 5 }, "prepareMissionId": "M01", "applyRevision": true, "catalogCost": { "fuel": 8, "rations": 4 } }
+  ]
+}
