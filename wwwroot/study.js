@@ -23,7 +23,7 @@ function fixtureLinks(text) {
 function workedExample(stage, sheet, { row = false, interactive = true, objective = 'total' } = {}) {
   const [sources, origin, api] = LearningCase.worked[sheet.id];
   const values = row ? worksheetExampleRows(stage, sheet, objective)[0] : [];
-  return '<details class="worked-example"><summary>Откуда данные в первой строке</summary>' +
+  return '<details class="worked-example" open><summary>Откуда данные в первой строке</summary>' +
     '<p><strong>Документы.</strong> ' + sourceLinks(sources.join(', '), interactive ? '#simulator-dossier-' : 'brief.html#source-') + '</p>' +
     '<p><strong>Как получить значения.</strong> ' + fixtureLinks(origin) + '</p>' +
     (row ? '<dl>' + sheet.columns.map((column, index) => '<dt>' + esc(column) + '</dt><dd>' + esc(values[index]) + '</dd>').join('') + '</dl>' : '') +
@@ -44,12 +44,18 @@ $catalog = Invoke-RestMethod "$base/api/missions" -Headers $headers
 $catalog | Where-Object id -eq 'M01' | ConvertTo-Json -Depth 5
 Invoke-RestMethod "$base/api/expeditions/$tripId" -Headers $headers | ConvertTo-Json -Depth 8
 Invoke-RestMethod "$base/api/game" -Headers $headers | ConvertTo-Json -Depth 8`;
-  return '<p>Скачайте исходники <a href="https://github.com/OlgaKraven/orbital-outpost">из репозитория</a>. ' +
-    'В каталоге с <code>OrbitalOutpost.csproj</code> запустите сервер. Команды ниже выполните в отдельном окне PowerShell.</p>' +
+  const [fixtures, party, reads] = commands.split(/\n\n|\n(?=\$catalog =)/);
+  return '<p>Этот разбор показывает, как полный API создаёт партию и откуда берёт данные. Для первого обработчика E01 используйте инструкцию «Собственный API» в тренажёре.</p>' +
+    '<h3>1. Запустите полный сервер</h3><p>Скачайте исходники <a href="https://github.com/OlgaKraven/orbital-outpost">из репозитория</a>. ' +
+    'В PowerShell откройте каталог с <code>OrbitalOutpost.csproj</code>. Выполните команду и оставьте окно открытым.</p>' +
     '<pre><code>dotnet run --no-launch-profile --urls http://127.0.0.1:5191</code></pre>' +
-    '<pre><code>' + esc(commands) + '</code></pre>' +
-    '<p><code>GET /study/fixtures</code> показывает исходные файлы из каталога <code>data/</code>. У M01 в <code>seed.json</code> поле <code>revision</code> отсутствует. ' +
+    '<h3>2. Прочитайте исходные документы</h3><p>Откройте второе окно PowerShell. Выполняйте следующие команды в нём по порядку, чтобы значения переменных сохранились между шагами.</p>' +
+    '<pre><code>' + esc(fixtures) + '</code></pre>' +
+    '<p><code>GET /study/fixtures</code> читает файлы из <code>data/</code>. У M01 в <code>seed.json</code> поле <code>revision</code> отсутствует. ' +
     'При загрузке сервер использует значение 1 из <code>MissionDto</code>. Файл <code>scenarios.json</code> задаёт редакцию 2, которую сценарий <code>briefing</code> применяет после подготовки рейса.</p>' +
+    '<h3>3. Создайте партию и сохраните идентификаторы</h3><pre><code>' + esc(party) + '</code></pre>' +
+    '<p>POST создаёт партию со складом, каталогом и подготовленным рейсом. <code>$headers</code> передаёт серверу <code>X-Game-Id</code>, чтобы запросы читали эту партию. <code>$tripId</code> указывает, какой рейс открыть.</p>' +
+    '<h3>4. Прочитайте три записи в созданной партии</h3><pre><code>' + esc(reads) + '</code></pre>' +
     '<p>Сопоставьте три записи. В каталоге M01 есть <code>revision: 2</code>, <code>cost: 7/3</code> и <code>rewardCredits: 160</code>. ' +
     'Рейс хранит <code>catalogRevision: 1</code>, <code>cost: 6/2</code> и <code>rewardCreditsSnapshot: 100</code>. ' +
     'В <code>inventory</code> физический склад 10/5, резерв 6/2, доступно 4/3. В JSON пары представлены полями <code>fuel</code> и <code>rations</code>.</p>' +
@@ -86,7 +92,7 @@ $afterTrip = Invoke-RestMethod $tripUrl -Headers $headers
     sameGame = (ConvertTo-Json -InputObject $beforeGame -Depth 10 -Compress) -ceq (ConvertTo-Json -InputObject $afterGame -Depth 10 -Compress)
     sameExpedition = (ConvertTo-Json -InputObject $beforeTrip -Depth 10 -Compress) -ceq (ConvertTo-Json -InputObject $afterTrip -Depth 10 -Compress)
 } | ConvertTo-Json -Depth 10`;
-  return '<details class="station-explanation lab-http-guide"><summary>Выполнить HTTP-проверку дефицита</summary>' +
+  return '<details class="station-explanation lab-http-guide" open><summary>Выполнить HTTP-проверку дефицита</summary>' +
     '<p><strong>1. Запустите эталонный сервер.</strong> Откройте <a href="https://github.com/OlgaKraven/orbital-outpost">репозиторий</a> и скачайте исходники через <strong>Code → Download ZIP</strong>. ' +
     'В каталоге с <code>OrbitalOutpost.csproj</code> выполните команду с .NET SDK 10 и оставьте сервер работать.</p>' +
     '<pre><code>dotnet run --no-launch-profile --urls http://127.0.0.1:5191</code></pre>' +

@@ -7,7 +7,7 @@ const scenarios = [
   { id: 'rations', title: 'Не хватает пайков', description: 'Проверить отказ при замене · запас 8/2' },
   { id: 'free', title: 'Свободная партия', description: 'Самостоятельно выбрать миссии и сравнить стратегии' }
 ];
-const simChapters = ['Разобраться в запросе', 'Прочитать данные и запустить рейс', 'Проверить повторный запрос', 'Написать свой API', 'Проверить каталог 8/4'];
+const simChapters = ['Разобраться в запросе', 'Данные и запуск', 'Проверить повтор', 'Написать свой API', 'Проверить каталог 8/4'];
 const simPair = value => value.fuel + ' / ' + value.rations;
 const simLink = (label, hash, mainAction = false) =>
   '<a class="' + (mainAction ? 'button primary' : 'sim-text-link') + '" href="#simulator' +
@@ -29,7 +29,9 @@ function unmountSimAnimation() {
 }
 
 function simAnimation() {
-  return '<details class="sim-animation"><summary>Разобрать, как собрать запрос запуска</summary><div data-sim-animation></div></details>';
+  return '<details class="sim-animation" open><summary>Разобрать, как собрать запрос запуска</summary>' +
+    '<p class="sim-hint">Нажимайте «Далее» и проследите, как собрать метод, путь, заголовок и JSON. В журнале путь будет содержать идентификатор созданного рейса. В своём прототипе вы используете короткий код E01.</p>' +
+    '<div data-sim-animation></div></details>';
 }
 
 function simPrediction(id, hint, value) {
@@ -51,17 +53,35 @@ function simIsE01(game) {
   return ['launch-transfer', 'custom'].includes(game?.scenarioId) || (game && simTrack?.id === game.id && simTrack.exercise === 'e01');
 }
 
+function simLaunchStep() {
+  const { game, selected: trip } = gameSession;
+  if (!trip || !simIsE01(game)) return null;
+  if (trip.status === 'prepared') return 0;
+  const repeated = simChecked?.id === game.id && simChecked.tripId === trip.id && simChecked.type === 'repeat';
+  return trip.status === 'inFlight' && !repeated ? 1 : 2;
+}
+
 function simChapterRail(current) {
-  return '<div class="sim-progress"><div><p>Этап ' + (current + 1) + ' из ' + simChapters.length +
-    ' <strong>' + esc(simChapters[current]) + '</strong></p>' +
-    (simChapters[current + 1] ? '<span>Далее: ' + esc(simChapters[current + 1]) + '</span>' : '') + '</div>' +
-    '<progress value="' + (current + 1) + '" max="' + simChapters.length + '" aria-label="Этап практики E01"></progress></div>';
+  return '<nav class="sim-progress" aria-label="Маршрут практики E01"><p>Этап ' + (current + 1) + ' из ' +
+    simChapters.length + '</p><ol>' + simChapters.map((name, index) =>
+      '<li' + (index === current ? ' aria-current="step"' : '') + '><span aria-hidden="true">' + (index + 1) +
+      '</span><strong>' + esc(name) + '</strong></li>').join('') + '</ol></nav>';
 }
 
 function simPanel(eyebrow, title, contents, action = '', secondary = '') {
-  return '<section class="sim-panel"><p class="sim-eyebrow">' + esc(eyebrow) + '</p><h2>' +
+  return '<section class="sim-panel"><p class="sim-eyebrow">' + esc(eyebrow) + '</p><h2 tabindex="-1">' +
     esc(title) + '</h2>' + contents +
     (action || secondary ? '<div class="sim-actions">' + action + secondary + '</div>' : '') + '</section>';
+}
+
+function simCue(label, text) {
+  return '<p class="sim-cue"><strong>' + esc(label) + '</strong> ' + text + '</p>';
+}
+
+function simDirections(items, first = 1) {
+  return '<ol class="sim-directions" start="' + first + '">' + items.map(([action, where, why]) =>
+    '<li><strong>' + esc(action) + '</strong><ul><li><b>Где и что увидеть</b> ' + where +
+    '</li><li><b>Зачем</b> ' + why + '</li></ul></li>').join('') + '</ol>';
 }
 
 function renderSimulator() {
@@ -103,17 +123,22 @@ function renderSimulator() {
       ? browserDemo ? 'Выполняем учебную команду…' : 'Ожидаем ответ сервера…' : esc(gameSession.message) : '') + '</div>' + body + '</div>';
   if (screen === 'custom') updateCustomPreview(main.querySelector('[data-sim-form="custom"]'));
   const animation = main.querySelector('.sim-animation');
-  animation?.addEventListener('toggle', () => {
+  const syncAnimation = () => {
     if (!animation.isConnected) return;
-    if (animation.open) detachSimAnimation = mountPrimer(animation.querySelector('[data-sim-animation]'), 2, true);
+    if (animation.open) detachSimAnimation ??= mountPrimer(animation.querySelector('[data-sim-animation]'), 2, true);
     else unmountSimAnimation();
-  });
+  };
+  if (animation) {
+    syncAnimation();
+    animation.addEventListener('toggle', syncAnimation);
+  }
 }
 
 function simMaterials() {
-  return simPanel('Учебные материалы', 'Один комплект для практики',
-    '<p>В архиве — данные, рабочие листы, заготовки C# и проверка E01. Объяснения и эталон доступны в этом тренажёре.</p>',
-    '<a class="button primary" href="student-kit.zip" download>Скачать комплект студента</a>',
+  return simPanel('Учебные материалы', 'Материалы для работы по шагам',
+    '<p>Проходите брифинг, запускайте рейс, заполняйте листы и сверяйтесь с эталоном прямо на сайте.</p>' +
+    '<p>Когда дойдёте до собственного API, скачайте заготовку C# из инструкции к первому запуску. Там показано, какие файлы открыть.</p>',
+    simLink('К инструкции по собственному API', 'build', true),
     simLink('Досье и данные', 'dossier') + simLink('Эталон проверки', 'reference') + simLink('Запросы к серверу', 'api') + simLink('Свои данные', 'custom') +
       '<a class="sim-text-link" href="' + esc(lastMainRoute) + '">Вернуться к шагу</a>');
 }
@@ -144,12 +169,16 @@ function simReference() {
 function simOrientation() {
   const localFile = location.protocol === 'file:';
   return simChapterRail(0) + simPanel('01 · Брифинг', 'Что именно делает API',
-    '<p>Диспетчер отправляет команду запуска. API принимает запрос, проверяет состояние рейса и возвращает ответ. Прототип — небольшой работающий фрагмент этой системы. Вы построите чтение состояния и запуск одного рейса.</p>' +
+    '<p>Штаб обновил каталог M01 после подготовки рейса E01. Диспетчеру нужно проверить, какую норму спишет станция и можно ли отправить команду дважды. Сначала вы проверите это в тренажёре, затем соберёте прототип API для того же рейса.</p>' +
+    simCue('Сейчас', 'Разберите одну команду. Когда нажмёте «Открыть исходные данные E01», тренажёр создаст учебную партию и покажет три записи о ресурсах.') +
     '<ol class="sim-signal"><li><strong>Запрос</strong><span>GET читает состояние. POST передаёт команду.</span></li>' +
     '<li><strong>Правило</strong><span>Сервер проверяет статус и списывает ресурсы по снимку рейса.</span></li>' +
     '<li><strong>Ответ</strong><span>Код показывает результат. JSON передаёт данные в виде именованных полей.</span></li></ol>' +
-    '<div class="sim-code-note"><p><strong>Тело команды запуска</strong> содержит поле <code>action</code> со строковым значением <code>launch</code>.</p>' +
-    simCode('{ "action": "launch" }') + '</div>' + simAnimation() +
+    simDirections([
+      ['Определите, к какому рейсу обращаетесь.', 'В схеме ниже адрес <code>/api/expeditions/E01/transitions</code> содержит код рейса для вашего будущего прототипа.', 'Адрес подсказывает API, какой рейс обработать.'],
+      ['Соберите команду из метода и тела.', 'В схеме <code>POST</code> означает действие, а в JSON поле <code>action</code> получает строку <code>launch</code>.', 'Рейс определяется адресом. Поле <code>action</code> сообщает, что с ним сделать.']
+    ]) +
+    simAnimation() +
     (browserDemo ? '<p class="note">Здесь вы проверяете правило в учебной модели в браузере. В разделе «Собственный API» вы запустите C# и проверите реальные HTTP-запросы.</p>' : ''),
     localFile ? simLink('Разобрать данные', 'data', true) : simButton('Открыть исходные данные E01', 'new', 'e01'),
     simLink('Свои данные', 'custom'));
@@ -158,6 +187,7 @@ function simOrientation() {
 function simData(localFile) {
   return simChapterRail(1) + simPanel('02 · Досье E01', 'Сопоставьте склад, рейс и каталог',
     '<p>Штаб обновил M01, когда рейс уже был подготовлен. Нужно определить, из какой записи обработчик возьмёт стоимость запуска.</p>' +
+    simCue('Что сравнить', '10 / 5 — сколько на складе, 6 / 2 — какие условия уже закреплены за рейсом, 7 / 3 — какие условия каталог предлагает сейчас.') +
     table(['Запись', 'Топливо', 'Пайки'], [
       ['Физический запас', 10, 5], ['Согласованные условия E01', 6, 2], ['Текущая карточка M01', 7, 3]
     ]) +
@@ -276,7 +306,7 @@ function simE01(game) {
   const transfer = game.scenarioId === 'launch-transfer';
   const custom = game.scenarioId === 'custom';
   const checked = simChecked?.id === game.id && simChecked.tripId === trip.id && simChecked.type === 'repeat';
-  const step = trip.status === 'prepared' ? 0 : trip.status === 'inFlight' && !checked ? 1 : 2;
+  const step = simLaunchStep();
   const label = custom ? 'Рейс E01 · свои данные' : transfer ? 'Рейс E01 · изменённый каталог 8/4' : 'Рейс E01 · исходный каталог 7/3';
   const journal = simLink('Журнал и ответы HTTP', 'journal');
   const recorded = attemptFor(game);
@@ -290,11 +320,16 @@ function simE01(game) {
       '</fieldset><div class="sim-actions"><button class="button primary" type="submit" data-focus="launch-e01"' +
       (gameSession.busy ? ' disabled' : '') + '>Запустить рейс</button>' + simLink('К объяснению запроса', 'learn') + '</div></form>';
     panel = simPanel(label, 'Предскажите, что спишет сервер',
-      simText('Штаб обновил M01, когда рейс уже был подготовлен. В таблице показаны три записи, которые видит диспетчер.') +
+      simCue('Сейчас', 'Найдите в таблице две нормы, выберите источник списания и нажмите «Запустить рейс».') +
+      '<p>Тренажёр создал отдельную партию. В ней есть склад, карточка каталога M01 и подготовленный рейс со снимком условий. В журнале у запроса создания есть <code>id</code> партии и <code>activeExpedition.id</code> рейса.</p>' +
       simTripFacts(game, trip, mission) + (custom ? '<p class="note">Значения получены из вашего запроса. Награда за рейс по снимку — ' +
       trip.rewardCreditsSnapshot + ', по текущему каталогу — ' + mission.rewardCredits + '.</p>' : '<p class="note">Склад и согласованные условия — ' + sourceLinks('С1') +
       '. Текущая карточка — ' + (transfer ? '<a href="scenarios.json">scenarios.json</a>, набор <code>launch-transfer</code>, поле <code>catalogCost</code>' : sourceLinks('С2')) +
-      '. <a href="#simulator-build">Поля собственного API E01</a></p>') + prompt);
+      '. <a href="#simulator-build">Поля собственного API E01</a></p>') +
+      simDirections([
+        ['Сравните строки «Снимок рейса» и «Каталог M01».', 'Из строки «Склад» вычтите выбранную норму отдельно для топлива и пайков.', 'Так у вас будет прогноз остатка, который можно проверить после запуска.'],
+        ['Отметьте прогноз и отправьте запуск.', 'Кнопка отправит <code>POST</code> на адрес этого рейса с телом <code>{ "action": "launch" }</code>. На следующем экране появятся списание и остаток.', 'Сервер применяет правило к данным рейса. Ваш выбор сохраняется для сверки.']
+      ]) + prompt);
   } else if (step === 1) {
     const result = recorded?.firstLaunch?.spent;
     const explanation = result ? '<p class="sim-observation"><strong>Списание (топливо / пайки) — ' + simPair(result) +
@@ -302,8 +337,13 @@ function simE01(game) {
         ? 'Вы предположили, что сервер возьмёт каталог. Рейс был подготовлен раньше, поэтому сработал снимок.' :
         'Прогноз совпал с ответом сервера.') + '</p>' : '';
     panel = simPanel(label, 'Повторите ту же команду',
+      simCue('Сейчас', 'Запомните остаток после первого запуска. Затем нажмите «Повторить запуск».') +
       '<p>Первый запуск принят. Статус рейса — <strong>«В полёте»</strong>. Что произойдёт, если отправить тот же запрос ещё раз?</p>' +
-      explanation + simInventory(game), simButton('Повторить запуск', 'retry', 'launch'), journal);
+      explanation + simInventory(game) +
+      simDirections([
+        ['Найдите остаток после первого запуска.', 'В таблице «Запасы» смотрите столбец «Склад». В журнале у первого POST будет код <code>200</code>.', 'Эти значения станут точкой сравнения для повтора.'],
+        ['Отправьте ту же команду для того же рейса.', 'Тренажёр повторит адрес и JSON. На следующем экране проверьте, изменились ли остаток и история.', 'Сбой связи может заставить диспетчера отправить запрос дважды. Проверка покажет, может ли повтор списать ресурсы ещё раз.']
+      ]), simButton('Повторить запуск', 'retry', 'launch'), journal);
   } else {
     const checkText = checked
       ? '<p>Повторный запрос вернул <strong>409 Conflict</strong>. ' + (browserDemo ? 'Учебная модель сохранила' : 'Сервер сохранил') + ' статус, запас и историю рейса.</p>'
@@ -316,7 +356,12 @@ function simE01(game) {
         name, attempt?.firstLaunch?.http ?? '—', attempt?.repeatLaunch?.http ?? '—',
         attempt?.repeatLaunch ? simPair(attempt.repeatLaunch.stock) : '—'
       ])) : '';
-    panel = simPanel(label, 'Сверьте прогноз с журналом', checkText + observed +
+    panel = simPanel(label, 'Сверьте прогноз с журналом',
+      simCue('Проверьте доказательство', 'Сравните первый запуск, повтор и остаток. Для своего API вам понадобятся эти же три проверки.') + checkText + observed +
+      (checked ? simDirections([
+        ['Откройте журнал и сравните два POST.', 'Оба запроса запуска раскрыты. Найдите одинаковые адрес и JSON, затем сравните коды <code>200</code> и <code>409</code>.', 'Разные ответы вызваны изменением статуса после первого запуска.'],
+        ['Подтвердите отсутствие второго списания.', 'Сравните остаток с предыдущим экраном. В истории найдите единственный переход в «В полёте».', 'При проверке собственного API этот результат поможет обнаружить повторную запись.']
+      ]) : '') +
       (prediction ? '<p class="sim-saved"><strong>Мой прогноз.</strong> ' + esc(prediction) + '</p>' : '') + evidence,
       custom ? simLink('Изменить свои данные', 'custom', true) :
         transfer ? simLink('К итогам проекта', 'project', true) : simLink('Написать свой обработчик', 'build', true),
@@ -415,21 +460,26 @@ function simCustom() {
   const draft = customDraft;
   const input = (name, label, value, minimum) => '<label>' + label + '<input type="number" name="' + name +
     '" value="' + esc(value ?? '') + '" min="' + minimum + '" max="' + customValueLimit + '" step="1" required></label>';
-  const group = (key, title, values, hasReward = false) => {
+  const group = (key, title, hint, values, hasReward = false) => {
     const prefix = hasReward ? key + '.cost' : key;
     const cost = hasReward ? values.cost : values;
     const minimum = hasReward ? 1 : 0;
-    return '<fieldset><legend>' + title + '</legend>' + input(prefix + '.fuel', 'Топливо', cost.fuel, minimum) +
+    return '<fieldset><legend>' + title + '</legend><p class="sim-form-hint">' + hint + '</p>' +
+      input(prefix + '.fuel', 'Топливо', cost.fuel, minimum) +
       input(prefix + '.rations', 'Пайки', cost.rations, minimum) +
       (hasReward ? input(key + '.rewardCredits', 'Награда, кредиты', values.rewardCredits, 0) : '') + '</fieldset>';
   };
   return simPanel('Практика E01', 'Соберите сценарий из своих данных',
-    '<p>Задайте числа для M01. Склад должен покрывать уже подготовленный рейс. Условия новой карточки могут превышать склад.</p>' +
-    '<form data-sim-form="custom">' + group('stock', '1. Склад', draft.stock) +
-    group('snapshot', '2. Снимок подготовленного рейса', draft.snapshot, true) +
-    group('catalog', '3. Текущая карточка каталога', draft.catalog, true) +
+    simCue('Сейчас', 'Задайте свои числа в трёх блоках. Чтобы проверить правило снимка, укажите в нём и в каталоге разные нормы.') +
+    '<form data-sim-form="custom">' +
+    group('stock', '1. Склад', 'Введите фактический запас. В JSON это <code>stock</code>. Склад должен покрывать норму подготовленного рейса.', draft.stock) +
+    group('snapshot', '2. Снимок подготовленного рейса', 'Укажите согласованные расход и награду. Из <code>snapshot.cost</code> система создаст резерв, а <code>snapshot.rewardCredits</code> сохранит условия награды рейса.', draft.snapshot, true) +
+    group('catalog', '3. Текущая карточка каталога', 'Введите новые условия M01. В JSON это <code>catalog</code>. Они будут видны рядом со снимком и могут превышать запас на складе.', draft.catalog, true) +
+    '<h3>4. Сверьте резерв, доступный остаток и JSON</h3>' +
+    '<p>Доступный остаток равен складу за вычетом резерва. Измените одно число и найдите, какое поле запроса и какой итог изменились.</p>' +
     '<p class="sim-observation" data-custom-preview aria-live="polite"></p>' +
     '<details open><summary>Тело запроса · POST /api/demo/games/custom</summary><pre><code data-custom-json></code></pre></details>' +
+    '<h3>5. Создайте учебную партию</h3><p>Откроется экран прогноза с вашими числами. В журнале ответ на создание партии покажет её <code>id</code> и <code>activeExpedition.id</code>. Эти значения указывают, с какой партией и рейсом работать дальше.</p>' +
     '<div class="sim-actions">' + (location.protocol === 'file:' ? '' : '<button type="submit" class="button primary">Создать партию из моих данных</button>') +
     '<button type="button" class="button" data-export-custom>Скачать JSON запроса</button>' + simLink('Готовые сценарии', 'scenarios') +
     '</div></form><p class="note">Для прогона скачанного JSON на локальном сервере используйте команду ниже.</p>' +
@@ -494,13 +544,18 @@ function simJournal(game) {
     esc(trip.replacesExpeditionId) + '</code>.</p>' : '') : '<p>События появятся после подготовки рейса.</p>';
   const logs = gameSession.logs;
   const selected = gameSession.lastCommand ?? logs[0];
-  const logList = logs.length ? logs.map(log => '<details class="sim-log"' + (log === selected ? ' open' : '') + '>' +
+  const tripPath = '/api/expeditions/' + trip?.id + '/transitions';
+  const launches = logs.filter(log => log.path === tripPath && log.request?.action === 'launch').slice(0, 2);
+  const logList = logs.length ? logs.map(log => '<details class="sim-log"' + (log === selected || launches.includes(log) ? ' open' : '') + '>' +
     '<summary><strong>' + esc(log.method + ' · ' + log.status) + '</strong> <code>' + esc(log.path) + '</code></summary>' +
     (log.location ? simText('Location: ' + log.location) : '') +
     simCode((log.request ? 'Запрос\n' + JSON.stringify(log.request, null, 2) + '\n\nОтвет\n' : '') +
       JSON.stringify(log.body, null, 2)) + '</details>').join('') : '<p>Ответы появятся после запроса в этой вкладке.</p>';
-  return simPanel('Проверка по данным', 'Журнал и ответы HTTP', selector + events +
+  return simPanel('Проверка по данным', 'Журнал и ответы HTTP',
+    simCue('Куда смотреть', 'В истории рейса отмечены изменения статуса. Ниже показаны запросы и ответы, начиная с самого свежего.') +
+    selector + events +
     (browserDemo ? '<h3>Ответы учебной модели</h3><p>Коды и JSON здесь воспроизводятся в браузере. Реальный HTTP проверьте на своём запущенном API.</p>' : '<h3>Обмен с сервером</h3>') +
+    (launches.length ? '<p>Последние команды запуска этого рейса раскрыты. В каждой записи найдите метод, путь, отправленный JSON и код ответа. Записи GET можно раскрыть, чтобы проверить состояние.</p>' : '') +
     logList, simLink('К текущему шагу', '', true));
 }
 
@@ -526,33 +581,58 @@ function simBuild(step) {
   const apiHint = 'Вставьте вывод проверки или запишите реальные запросы, ответы и состояние после каждой команды.';
   const steps = [
     ['Поднимите первый сервер',
-      '<p>Распакуйте <a href="student-kit.zip" download>студенческий комплект</a>. Откройте терминал в папке <code>first-api</code> и проверьте, что установлен .NET SDK 10.</p>' +
+      simCue('Цель шага', 'Запустить заготовку и получить исходное состояние рейса. На следующем шаге вы добавите к ней свою команду запуска.') +
+      '<h3>1. Подготовьте папку для работы</h3><p>До этого шага всё проходится в браузере. Архив нужен для части, где вы пишете C# на своём компьютере.</p>' +
+      '<p><a class="button" href="student-kit.zip" download>Скачать заготовку для C#</a></p>' +
+      '<ol class="sim-directions"><li>Распакуйте ZIP и откройте папку <code>first-api</code> в редакторе. В ней лежат файлы этой практики.' +
+      '<ul><li><code>FirstApi.csproj</code> — файл проекта, по которому .NET запускает сервер.</li>' +
+      '<li><code>Program.cs</code> — исходные данные и готовое чтение <code>GET /api/game</code>. Здесь вы добавите POST.</li>' +
+      '<li><code>requests.http</code> — примеры запросов для ручной проверки.</li>' +
+      '<li><code>Check-E01.ps1</code> — автоматическая проверка первого запуска и повтора.</li></ul></li>' +
+      '<li>Если вы переходите к лабораторной с SQLite, папка <code>starter</code> содержит отдельную заготовку для неё. Досье и листы есть на сайте и в архиве для работы офлайн.</li></ol>' +
+      '<h3>2. Запустите сервер в первом PowerShell</h3><p>Откройте окно PowerShell в <code>first-api</code>. Команда <code>dotnet --version</code> должна показать версию <code>10.x</code>. ' +
+      'После запуска дождитесь строки <code>Now listening on: http://localhost:5201</code> и оставьте это окно открытым.</p>' +
       simCode('dotnet --version\ndotnet run --no-launch-profile --urls http://localhost:5201') +
-      '<p>Во втором терминале выполните команду ниже. Ищите статус <code>prepared</code> и три разные записи о ресурсах. В заготовке чтение уже работает.</p>' +
-      simCode('Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 5')],
+      '<h3>3. Прочитайте состояние во втором PowerShell</h3><p>Откройте второе окно и выполните команду ниже. Она отправляет GET работающему серверу и показывает ответ в виде JSON.</p>' +
+      simCode('Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 5') +
+      simCue('Можно продолжать', 'В ответе видны <code>prepared</code>, склад <code>stock</code> 10/5, согласованная норма <code>agreedCost</code> 6/2 и текущая <code>currentCost</code> 7/3.')],
     ['Добавьте команду запуска',
-      '<p>Остановите сервер через Ctrl+C. Добавьте этот обработчик перед <code>app.Run()</code> в <code>Program.cs</code>. Параметр <code>LaunchRequest</code> принимает JSON из тела запроса.</p>' +
+      simCue('Цель шага', 'Свяжите маршрут POST со своим кодом. Внутри обработчика сначала проверяйте команду и статус, затем меняйте данные.') +
+      simDirections([
+        ['Остановите сервер через Ctrl+C.', 'Нажмите клавиши в первом PowerShell. Вернётся приглашение ввести команду.', 'Следующий запуск загрузит изменённый код.'],
+        ['Откройте first-api/Program.cs и найдите комментарий Add POST.', 'Вставьте заготовку ниже вместо комментария перед <code>app.Run()</code>. Тип <code>LaunchRequest</code> уже объявлен в конце файла.', '<code>MapPost</code> связывает метод и адрес с обработчиком, а ASP.NET Core заполнит <code>request.Action</code> из JSON.']
+      ]) +
       simCode('app.MapPost("/api/expeditions/E01/transitions", (LaunchRequest request) =>\n{\n    // Проверки, списание и ответ\n});') +
-      '<ol class="steps"><li>Если <code>request.Action</code> отличается от <code>launch</code>, верните <code>Results.BadRequest()</code>.</li>' +
-      '<li>Если статус отличается от <code>prepared</code>, верните <code>Results.Conflict()</code> до записи.</li>' +
-      '<li>Выберите источник стоимости между <code>agreedCost</code> и <code>currentCost</code>. В протоколе одной фразой объясните выбор. Вычтите эти значения из запаса и запишите результат в <code>stock</code>.</li>' +
-      '<li>Установите <code>inFlight</code>, добавьте статус в <code>history</code> и верните <code>Results.Ok(new { status, stock })</code>.</li></ol>' +
-      '<p>Если сборка не проходит, начните с первой строки ошибки в <code>Program.cs</code>. Объявления <code>record</code> должны быть после <code>app.Run()</code>.</p>'],
+      simDirections([
+        ['Реализуйте проверки в начале обработчика.', 'Для команды, отличной от <code>launch</code>, верните <code>Results.BadRequest()</code>. Для статуса, отличного от <code>prepared</code>, верните <code>Results.Conflict()</code>.', 'Ошибочная или повторная команда должна завершиться до изменения склада и истории.'],
+        ['Спишите ресурсы по выбранной норме.', 'Выберите <code>agreedCost</code> или <code>currentCost</code> на основе прогона в тренажёре. Вычтите <code>Fuel</code> и <code>Rations</code> по отдельности и присвойте <code>stock</code> новый <code>Resources</code>.', 'GET после запуска должен показать фактический остаток. В протоколе объясните выбор записи.'],
+        ['Обновите статус, историю и ответ.', 'Установите <code>inFlight</code>, вызовите <code>history.Add(status)</code> и верните <code>Results.Ok(new { status, stock })</code>. Сохраните файл.', 'История подтвердит, сколько успешных запусков записал сервер.']
+      ], 3) +
+      simCue('Если сервер не собирается', 'Начните с первой ошибки в терминале и проверьте указанную строку в <code>Program.cs</code>. Объявления <code>record</code> остаются после <code>app.Run()</code>.')],
     ['Проверьте свой обработчик',
-      '<p>Запустите сервер той же командой. В другом PowerShell из папки <code>first-api</code> выполните проверку. Она читает входные данные, отправляет первый и повторный запуск и сверяет состояние.</p>' +
+      simCue('Цель шага', 'Подтвердите на своём сервере, что первая команда списывает ресурсы один раз, а повтор оставляет состояние прежним.') +
+      '<h3>1. Запустите чистый прогон</h3><p>В первом PowerShell из <code>first-api</code> снова выполните <code>dotnet run --no-launch-profile --urls http://localhost:5201</code>. ' +
+      'Данные загружаются заново. Если вы уже запускали рейс вручную, перезапустите сервер перед проверкой.</p>' +
+      '<h3>2. Выполните проверку из второго PowerShell</h3><p>Откройте <code>first-api</code> во втором окне и выполните команду. Она читает исходное состояние, отправляет два одинаковых POST и повторно читает состояние после каждого.</p>' +
       simCode('./Check-E01.ps1 -AsJson') +
-      '<p>Для ручной проверки откройте <code>requests.http</code>. Выполните GET перед запуском и после каждого из двух одинаковых POST. Между командами оставьте сервер запущенным.</p>' +
-      '<p>Если первый ответ 404, проверьте адрес <code>/api/expeditions/E01/transitions</code>. Если второй POST меняет запас, перенесите проверку статуса перед списанием.</p>' +
-      '<h3>Мой API · протокол 7/3</h3>' + apiField('catalog73', 'Фактические запросы и ответы · 7/3', apiHint) +
+      '<p>Для ручной проверки вместо скрипта откройте <code>requests.http</code> в редакторе с поддержкой HTTP-запросов. Выполните запросы сверху вниз. Между запросами оставьте сервер включённым.</p>' +
+      simCue('Что искать в результате', 'Первый POST вернул <code>200</code>, второй <code>409</code>. Склад после каждого POST — 4/3, в истории один переход в <code>inFlight</code>.') +
+      '<p>При <code>404</code> проверьте адрес <code>/api/expeditions/E01/transitions</code>. Если второй POST меняет запас, перенесите проверку статуса перед списанием.</p>' +
+      '<h3>3. Запишите доказательство · каталог 7/3</h3>' + apiField('catalog73', 'Фактические запросы и ответы · 7/3', apiHint) +
       apiField('reason', 'Почему обработчик использует этот источник', 'Свяжите выбор источника с условиями рейса и результатом обоих прогонов.', 2000) +
       (simNotebook.studentApiNote ? '<details><summary>Моя предыдущая заметка</summary><p class="sim-saved">' +
         esc(simNotebook.studentApiNote) + '</p></details>' : '')],
     ['Перенесите проверку на каталог 8/4',
-      '<p>Остановите сервер и запустите его с изменённым каталогом. Через GET проверьте, что <code>currentCost</code> стал 8/4, а <code>agreedCost</code> остался прежним. Запишите прогноз до запуска.</p>' +
-      simCode('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true\n# Во втором терминале\n./Check-E01.ps1 -Catalog "8/4" -AsJson') +
+      simCue('Цель шага', 'Измените только текущую карточку и проверьте, отразится ли это на уже подготовленном рейсе.') +
+      '<h3>1. Перезапустите сервер с новой карточкой</h3><p>В первом PowerShell нажмите Ctrl+C и запустите сервер с параметром <code>LaunchTransfer</code>. При старте <code>Program.cs</code> читает этот параметр и выставляет <code>currentCost</code> 8/4.</p>' +
+      simCode('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true') +
+      '<h3>2. Проверьте входные данные и запишите прогноз</h3><p>Во втором PowerShell отправьте GET. Проверьте, что <code>currentCost</code> стал 8/4, а <code>agreedCost</code> остался 6/2.</p>' +
+      simCode('Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 5') +
       simPrediction('sim-transfer-prediction', 'Что изменится в ответе после смены каталога? Запишите ожидаемый остаток и статус.', simNotebook.transferPrediction) +
-      '<h3>Мой API · протокол 8/4</h3>' + apiField('catalog84', 'Фактические запросы и ответы · 8/4', apiHint) +
-      '<p>Сравните свой протокол с тренажёром. Затем перенесите правило снимка в проект с SQLite.</p>']
+      '<h3>3. Выполните тот же прогон и запишите результат</h3><p>Во втором PowerShell из <code>first-api</code> запустите проверку с ожидаемой редакцией каталога.</p>' +
+      simCode('./Check-E01.ps1 -Catalog "8/4" -AsJson') +
+      apiField('catalog84', 'Фактические запросы и ответы · 8/4', apiHint) +
+      simCue('Финальная сверка', 'Сопоставьте коды обоих POST, физический остаток и число переходов в протоколах 7/3 и 8/4. Кнопка ниже откроет вариант 8/4 в тренажёре.')]
   ];
   const current = Math.min(Math.max(step || 1, 1), steps.length);
   const [title, contents] = steps[current - 1];

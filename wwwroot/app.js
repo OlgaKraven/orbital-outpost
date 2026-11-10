@@ -284,6 +284,7 @@ async function runGame(action, message) {
   if (gameSession.busy) return;
   const focus = document.activeElement?.dataset.focus;
   const originRoute = location.hash;
+  const launchStep = originRoute === '#simulator' ? simLaunchStep() : null;
   gameSession.busy = true;
   gameSession.message = '';
   gameSession.failed = false;
@@ -309,7 +310,9 @@ async function runGame(action, message) {
     gameSession.busy = false;
     if (view === 'sim' && (originRoute === location.hash || simUsesGame())) {
       renderSimulator();
-      if (focus) (main.querySelector('[data-focus="' + CSS.escape(focus) + '"]:not(:disabled)') ??
+      if (!gameSession.failed && originRoute === location.hash && launchStep !== null && launchStep !== simLaunchStep()) {
+        main.querySelector('.sim-panel h2')?.focus();
+      } else if (focus) (main.querySelector('[data-focus="' + CSS.escape(focus) + '"]:not(:disabled)') ??
         main.querySelector('#sim-message'))?.focus();
     }
   }

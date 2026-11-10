@@ -315,9 +315,9 @@ const studentGuide = document('Задание на разработку прот
     '<p><strong>Для проекта с SQLite.</strong> Приложить исходники, рабочие листы, запись проектного решения и протокол. Для выбранной ветви проверить успех, границу, отказ и чтение после перезапуска.</p>')
 ].join(''), true);
 
-const materials = document('Материалы квеста', 'Один комплект для самостоятельной работы.',
-  section('student', 'Что скачать', '<p>В комплекте — досье, рабочие листы, исходные JSON, заготовки C# и проверка E01. Объяснения и эталоны собраны в тренажёре.</p>' +
-    '<div class="actions"><a class="button primary" href="student-kit.zip" download>Скачать комплект студента</a>' +
+const materials = document('Материалы квеста', 'Досье, эталон и подготовка к собственному API.',
+  section('student', 'Когда понадобится архив', '<p>Разбор, симуляция и рабочие листы доступны в браузере. Архив понадобится на этапе «Написать свой API». Распакуйте его и откройте папку <code>first-api</code>. В ней есть стартовый проект C#, примеры запросов и проверка рейса E01.</p>' +
+    '<div class="actions"><a class="button primary" href="index.html#simulator-build">Открыть инструкцию по C#</a>' +
     '<a class="button" href="index.html#simulator-reference">Открыть эталон</a></div>'));
 
 const primer = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +

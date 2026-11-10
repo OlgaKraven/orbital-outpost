@@ -295,30 +295,46 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-status:empty { display: none; }
 .sim-status-error { color: var(--error); }
 .sim-progress { margin: 0 0 18px; }
-.sim-progress > div { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; }
-.sim-progress p { color: var(--muted); margin: 0; font-size: .89rem; }
-.sim-progress strong { color: var(--ink); margin-inline-start: 5px; }
-.sim-progress span { color: var(--muted); font-size: .84rem; }
-.sim-progress progress { width: 100%; height: 5px; display: block; margin-top: 8px; border: 0; accent-color: var(--mint); }
-.sim-progress progress::-webkit-progress-bar { background: #294550; border-radius: 3px; }
-.sim-progress progress::-webkit-progress-value { background: var(--mint); border-radius: 3px; }
+.sim-progress p { color: var(--muted); margin: 0 0 7px; font-size: .89rem; }
+.sim-progress ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.sim-progress li { display: flex; align-items: center; gap: 7px; padding: 7px 8px; margin: 0; color: var(--muted); border-bottom: 2px solid var(--line); font-size: .85rem; line-height: 1.25; }
+.sim-progress li span { display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; width: 23px; height: 23px; flex: none; }
+.sim-progress [aria-current="step"] { border-color: var(--mint); background: #183b43; color: var(--ink); border-radius: 6px 6px 0 0; }
+.sim-progress [aria-current="step"] span { border-color: var(--mint); background: var(--mint); color: #102a22; font-weight: 800; }
 .sim-panel { min-width: 0; }
-.sim-panel h2 { font-size: clamp(1.55rem,4vw,2.65rem); }
+.sim-panel h2 { font-size: clamp(1.55rem,4vw,2.65rem); scroll-margin-top: 20px; }
 .sim-panel p { max-width: 76ch; }
 .sim-panel pre { background: #0b1f2a; border: 1px solid var(--line); }
+.sim-panel .sim-cue { max-width: none; margin: 14px 0; padding: 11px 14px; border-inline-start: 3px solid var(--gold); border-radius: 0 6px 6px 0; background: #243539; }
+.sim-cue strong { display: block; color: var(--gold); margin-bottom: 2px; }
+.sim-directions { padding-inline-start: 24px; margin: 15px 0; }
+.sim-directions > li { padding: 3px 0 6px 3px; }
+.sim-directions > li::marker { color: var(--mint); font-weight: 750; }
+.sim-directions ul { list-style: none; padding: 3px 0 3px 11px; margin: 5px 0 0; border-inline-start: 1px solid var(--line); }
+.sim-directions ul li { margin: 3px 0; color: var(--muted); }
+.sim-directions b { color: var(--ink); margin-inline-end: 4px; }
 .sim-sources tbody th { background: transparent; }
 .sim-sources small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; line-height: 1.35; }
 .sim-sources th:not(:first-child), .sim-sources td { width: 15%; text-align: center; }
 .sim-actions { display: flex; flex-wrap: wrap; gap: 9px 17px; align-items: center; margin-top: 15px; }
 .sim-text-link { color: var(--muted); font-size: .92rem; text-underline-offset: 3px; }
 .sim-text-link:hover { color: var(--mint); }
-.sim-signal { padding-left: 22px; margin-block: 10px 15px; }
-.sim-signal li { padding-block: 2px; }
-.sim-signal span { margin-left: 8px; color: var(--muted); }
-.sim-code-note p { margin-bottom: 4px; }
-.sim-code-note pre { margin-top: 6px; }
+.sim-signal { list-style: none; padding: 0; margin-block: 10px 15px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sim-signal li { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-top: 2px solid var(--mint); border-radius: 6px; background: #142e39; }
+.sim-signal span { display: block; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .sim-signal li { animation: sim-signal-in .5s ease-out both; }
+  .sim-signal li:nth-child(2) { animation-delay: .14s; }
+  .sim-signal li:nth-child(3) { animation-delay: .28s; }
+  @keyframes sim-signal-in {
+    from { opacity: .5; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
 .sim-animation, .sim-log { border-top: 1px solid var(--line); padding-block: 9px; }
 .sim-animation summary, .sim-log summary { cursor: pointer; overflow-wrap: anywhere; }
+.sim-animation summary { color: var(--mint); font-weight: 700; }
+.outpost-app .primer-next { color: var(--mint); border-color: var(--mint); }
 .sim-animation .primer { padding: 12px 0 0; border: 0; }
 .primer-application { border-left: 3px solid var(--mint); padding: 5px 0 5px 10px; }
 .outpost-app .primer-visual { background: #0d202b; border-color: var(--line); }
@@ -348,10 +364,18 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .sim-journal-select { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 13px; }
 .sim-journal-select label { display: grid; gap: 4px; max-width: 100%; }
 [data-sim-form="custom"] fieldset { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 14px 0; border: 1px solid var(--line); min-inline-size: 0; }
+[data-sim-form="custom"] legend { font-weight: 700; color: var(--mint); }
+.sim-form-hint { flex: 1 0 100%; color: var(--muted); margin: 0; }
 [data-sim-form="custom"] label { display: grid; gap: 4px; flex: 1 1 120px; min-width: 0; }
 [data-sim-form="custom"] input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+@media (max-width: 680px) {
+  .sim-progress ol { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .sim-progress li { justify-content: center; }
+  .sim-progress [aria-current="step"] { grid-column: span 3; }
+  .sim-progress li:not([aria-current]) strong { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+}
 @media (max-width: 460px) {
-  .sim-signal span { display: block; margin-left: 0; }
+  .sim-signal { grid-template-columns: 1fr; gap: 4px; }
   .sim-panel th, .sim-panel td { padding-inline: 5px; }
 }
 </style></head><body class="document"><header><p class="kicker">Орбитальный форпост</p><h1>Досье «Донесение с орбиты»</h1><p>Исходные сведения для принятия проектного решения.</p><nav aria-label="Материалы"><a class="button" href="student-guide.html">Задание</a><a class="button" href="launch.html">Первый API · E01</a><a class="button" href="brief.html">Досье</a><a class="button" href="primer.html">Вводный тренажёр</a><a class="button" href="workbook.html">Рабочие листы</a></nav></header><article class="panel"><section id="brief"><h2>1. Входящие документы</h2><p>Экспедиция M01 уже подготовлена, когда поступает новая редакция задания. Определить, при каких условиях выполнить существующий рейс и при каких подтвердить его замену.</p><article class="dossier-source" id="source-c1"><h3>С1 · Журнал диспетчера</h3><p>Экспедиция M01 подготовлена. Снабжение сверило склад и сообщило остаток: 10 топлива и 5 пайков. В рейсе зафиксированы 6 топлива, 2 пайка и награда 100. Запуск ещё не состоялся.</p></article><article class="dossier-source" id="source-c2"><h3>С2 · Обновление от редактора миссий</h3><p>Редактор установил для M01 расход 7 топлива и 3 пайка, награду 160. Редакция 2 опубликована в каталоге после подготовки рейса.</p></article><article class="dossier-source" id="source-c3"><h3>С3 · Распоряжение руководителя</h3><p>Текущий рейс можно выполнить по согласованным условиям. Замену подтверждает диспетчер. При отказе прежний рейс и его резерв должны сохраниться.</p></article><article class="dossier-source" id="source-c4"><h3>С4 · Задача на основную партию</h3><p>Руководитель ставит цель максимизировать суммарную награду. После M01 можно выполнить любую доступную незавершённую миссию. Один активный рейс на партию.</p></article><article class="dossier-source" id="source-c5"><h3>С5 · Изменённая задача</h3><p>Для другой партии руководитель задаёт цель получить по M01 минимум 150 кредитов за один рейс. Доступность новой редакции зависит от запасов.</p></article><article class="dossier-source" id="source-c6"><h3>С6 · Протокол приёмки</h3><p>Проверяющий сверяет, что запуск списал стоимость снимка, награда начислена после завершения, а в журнале видны переходы и связь заменяющего рейса с исходным.</p></article></section><section id="reference-data"><h2>2. Справочные данные</h2><p>Топливо измеряется в условных единицах, пайки — в штуках, награда — в кредитах. Исходный каталог:</p><div class="table-wrap"><table><thead><tr><th scope="col">ID</th><th scope="col">Миссия</th><th scope="col">Топливо, ед.</th><th scope="col">Пайки, шт.</th><th scope="col">Награда, кр.</th></tr></thead><tbody><tr><td>M01</td><td>Ремонт антенны</td><td>6</td><td>2</td><td>100</td></tr><tr><td>M02</td><td>Дальний ретранслятор</td><td>8</td><td>1</td><td>150</td></tr><tr><td>M03</td><td>Доставка к маяку</td><td>4</td><td>3</td><td>90</td></tr></tbody></table></div><h3>Карточка обновления M01</h3><div class="table-wrap"><table><thead><tr><th scope="col">Редакция M01</th><th scope="col">Топливо, ед.</th><th scope="col">Пайки, шт.</th><th scope="col">Награда, кр.</th></tr></thead><tbody><tr><td>1</td><td>6</td><td>2</td><td>100</td></tr><tr><td>2</td><td>7</td><td>3</td><td>160</td></tr></tbody></table></div><h3>Наборы для повторной проверки</h3><p>Каждая строка задаёт физический запас. M01 подготовлена по редакции 1, а каталог показывает новую редакцию. В наборе переноса текущая стоимость равна 8/4.</p><div class="table-wrap"><table><thead><tr><th scope="col">Сценарий</th><th scope="col">Название</th><th scope="col">Топливо, ед.</th><th scope="col">Пайки, шт.</th></tr></thead><tbody><tr><td>briefing</td><td>После донесения</td><td>10</td><td>5</td></tr><tr><td>boundary</td><td>Ровно по норме</td><td>7</td><td>3</td></tr><tr><td>shortage</td><td>Оба ресурса в дефиците</td><td>6</td><td>2</td></tr><tr><td>rations</td><td>Дефицит пайков</td><td>8</td><td>2</td></tr><tr><td>launch-transfer</td><td>Перенос E01: условия каталога 8/4</td><td>10</td><td>5</td></tr></tbody></table></div><p><a href="scenarios.json" download>Скачать исходные наборы JSON</a> · <a href="seed.json" download>Скачать исходный каталог JSON</a></p></section><section id="base"><h2>3. Исходный бриф</h2><article class="dossier-source" id="source-b1"><h3>Б1 · Цель партии</h3><p>Диспетчер выбирает миссии по их стоимости и награде. Поставка ресурсов ограничена стартовым запасом.</p></article><article class="dossier-source" id="source-b2"><h3>Б2 · Цикл экспедиции</h3><p>Подготовка резервирует ресурсы. Запуск списывает резерв. Завершение учитывает награду. Отмена до запуска освобождает резерв.</p></article><article class="dossier-source" id="source-b3"><h3>Б3 · Ограничения рейсов</h3><p>Активна максимум одна экспедиция. По одной миссии допускается одно успешное выполнение. После отмены разрешена новая попытка.</p></article><article class="dossier-source" id="source-b4"><h3>Б4 · История операции</h3><p>Подготовка фиксирует цену рейса в ресурсах и награду. Для каждого перехода требуется дата и время.</p></article><article class="dossier-source" id="source-b5"><h3>Б5 · Приёмка</h3><p>Для проверки используется свежая партия. Отклонённый запрос сохраняет состояние, с которого начался.</p></article></section><section id="glossary"><h2>4. Понятия для работы</h2><div class="table-wrap"><table><thead><tr><th scope="col">Термин</th><th scope="col">Что означает в задаче</th></tr></thead><tbody><tr><td>Редакция каталога</td><td>Номер текущих условий миссии. Запрос замены указывает принятую редакцию.</td></tr><tr><td>Снимок рейса</td><td>Зафиксированные при подготовке стоимость, награда и редакция.</td></tr><tr><td>Резерв</td><td>Количество ресурсов в подготовленном рейсе. Физический запас уменьшается при запуске.</td></tr><tr><td>Доступный запас</td><td>Физический запас за вычетом резерва.</td></tr><tr><td>Транзакция</td><td>Группа действий, которая целиком подтверждается или откатывается.</td></tr><tr><td>DTO</td><td>Структура данных, которую отправляет или получает клиент API.</td></tr><tr><td>Фикстура</td><td>Подготовленный набор данных, на котором повторяется проверка.</td></tr><tr><td>Трассировка</td><td>Связь требования с источником, моделью, операцией и тестом.</td></tr></tbody></table></div></section></article></body></html>

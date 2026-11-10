@@ -144,13 +144,13 @@
       (root.hasAttribute('data-standalone-primer') ? 'student-guide.html' : '#map') + '">' +
       (root.hasAttribute('data-standalone-primer') ? 'К заданию' : 'К карте') + '</a></div>' +
       '<p>Разбор привязан к практической работе. После каждого примера указано, что перенести в код или рабочий лист.</p>' +
-      '<details class="station-explanation"><summary>Выбрать тему разбора</summary><nav class="primer-tabs" aria-label="Темы тренажёра">' + slides.map((item, index) =>
+      '<details class="station-explanation" open><summary>Выбрать тему разбора</summary><nav class="primer-tabs" aria-label="Темы тренажёра">' + slides.map((item, index) =>
         '<button class="button" data-chapter="' + index + '">' + (index + 1) + '. ' + escape(item.title) + '</button>').join('') +
       '</nav></details>') + '<h3 id="primer-title"></h3><p id="primer-intro"></p><p id="primer-purpose" class="note"></p>' +
       '<div id="primer-variants" class="actions"></div>' +
       '<div class="primer-visual" id="primer-frame"></div><div id="primer-json"></div>' +
       '<div class="actions primer-controls"><button class="button" data-player="previous">Назад</button>' +
-      '<button class="button primary" data-player="next">Далее</button>' +
+      '<button class="button ' + (singleChapter ? 'primer-next' : 'primary') + '" data-player="next">Далее</button>' +
       '<button class="text-button" data-player="play">Автопоказ</button>' +
       '<button class="text-button" data-player="restart">Повторить с начала</button>' +
       '<span class="note" id="primer-step" role="status"></span></div></article>';
