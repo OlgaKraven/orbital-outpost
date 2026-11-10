@@ -249,6 +249,22 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .station-section .primer { padding: 15px 0 0; border: 0; }
 .station-draft { margin-top: 18px; }
 .station-section .challenge { max-width: 730px; }
+.dossier-source { border-top: 1px solid var(--line); padding: 10px 0 3px; }
+.dossier-source h4 { margin: 0 0 4px; }
+.dossier-source:target { border-color: var(--mint); }
+.lab-http-guide { margin-block: 1rem; }
+.lab-http-guide summary { font-weight: 700; }
+.mobile-cell-label { display: none; }
+@media screen and (max-width: 760px) {
+  .worksheet-table { overflow: visible; }
+  .worksheet-table table, .worksheet-table tbody, .worksheet-table tr, .worksheet-table td { display: block; width: 100%; }
+  .worksheet .worksheet-table table { min-width: 0; }
+  .worksheet-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .worksheet-table tbody tr { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; padding: 7px 10px; }
+  .worksheet-table tbody td { border: 0; padding: 6px 0; overflow-wrap: anywhere; }
+  .worksheet-table .mobile-cell-label { display: block; font-size: .85rem; font-weight: 700; margin-bottom: 3px; color: var(--muted); }
+  .worksheet-table textarea { min-width: 0; }
+}
 
 .sim-shell {
   background: var(--card);

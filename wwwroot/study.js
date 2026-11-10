@@ -2,17 +2,67 @@ function worksheetHeaders(sheet) {
   return sheet.columns.map(column => '<th scope="col">' + esc(column) + '</th>').join('');
 }
 
+function sourceAnchor(id) {
+  return (id[0] === 'Б' ? 'b' : 'c') + id[1];
+}
+
+function sourceLinks(text) {
+  return esc(text).replace(/[БС][1-6](?:–[БС][1-6])?/g, id =>
+    '<a href="#simulator-dossier-' + sourceAnchor(id) + '">' + id + '</a>');
+}
+
+function lab07HttpGuide() {
+  const commands = `$base = 'http://127.0.0.1:5191/api'
+$party = Invoke-RestMethod -Method Post -Uri "$base/demo/games?scenario=rations"
+$headers = @{ 'X-Game-Id' = $party.id }
+$tripUrl = "$base/expeditions/$($party.activeExpedition.id)"
+$beforeGame = Invoke-RestMethod "$base/game" -Headers $headers
+$beforeTrip = Invoke-RestMethod $tripUrl -Headers $headers
+
+$body = '{"expectedCatalogRevision":2}'
+$response = Invoke-WebRequest -Method Post -Uri "$tripUrl/replacements" -Headers $headers -ContentType 'application/json' -Body $body -SkipHttpErrorCheck
+$responseText = $response.Content
+if ($responseText -is [byte[]]) { $responseText = [Text.Encoding]::UTF8.GetString($responseText) }
+$afterGame = Invoke-RestMethod "$base/game" -Headers $headers
+$afterTrip = Invoke-RestMethod $tripUrl -Headers $headers
+
+[ordered]@{
+    partyId = $party.id
+    expeditionId = $party.activeExpedition.id
+    request = "POST $tripUrl/replacements"
+    requestBody = $body | ConvertFrom-Json
+    httpStatus = [int]$response.StatusCode
+    responseBody = $responseText | ConvertFrom-Json
+    gameBefore = $beforeGame
+    gameAfter = $afterGame
+    expeditionBefore = $beforeTrip
+    expeditionAfter = $afterTrip
+    sameGame = (ConvertTo-Json -InputObject $beforeGame -Depth 10 -Compress) -ceq (ConvertTo-Json -InputObject $afterGame -Depth 10 -Compress)
+    sameExpedition = (ConvertTo-Json -InputObject $beforeTrip -Depth 10 -Compress) -ceq (ConvertTo-Json -InputObject $afterTrip -Depth 10 -Compress)
+} | ConvertTo-Json -Depth 10`;
+  return '<details class="station-explanation lab-http-guide"><summary>Выполнить HTTP-проверку дефицита</summary>' +
+    '<p><strong>1. Запустите эталонный сервер.</strong> Откройте <a href="https://github.com/OlgaKraven/orbital-outpost">репозиторий</a> и скачайте исходники через <strong>Code → Download ZIP</strong>. ' +
+    'В каталоге с <code>OrbitalOutpost.csproj</code> выполните команду с .NET SDK 10 и оставьте сервер работать.</p>' +
+    '<pre><code>dotnet run --no-launch-profile --urls http://127.0.0.1:5191</code></pre>' +
+    '<p><strong>2. Выполните проверку во втором окне PowerShell 7.</strong> Первая команда создаёт партию с запасом 8/2. ' +
+    'Из ответа берутся <code>id</code> для заголовка <code>X-Game-Id</code> и <code>activeExpedition.id</code> для адреса рейса.</p>' +
+    '<pre><code>' + esc(commands) + '</code></pre>' +
+    '<p><strong>3. Сохраните вывод в протокол.</strong> Ожидаются <code>409</code>, <code>insufficient_supplies</code> и оба значения <code>true</code>. ' +
+    'В JSON должны совпасть склад 8/2, резерв 6/2, статус <code>prepared</code> и история. Если реализовали замену в ветви Б, повторите эту проверку на своём API и укажите его адрес в <code>$base</code>. ' +
+    'Для ветви А проверьте запуск по снимку и отказ при повторном запуске.</p></details>';
+}
+
 function studyWorksheet(stageIndex, saved) {
   const stage = LearningCase.stages[stageIndex];
   return stage.sheets.map(sheet => {
     const rows = saved[sheet.id] ?? [sheet.columns.map(() => '')];
-    const cells = rows.map((row, rowIndex) => '<tr>' + sheet.columns.map((column, field) =>
-      '<td><textarea rows="2" maxlength="600" data-sheet="' + sheet.id + '" data-row="' + rowIndex +
+    const cells = rows.map((row, rowIndex) => '<tr role="row">' + sheet.columns.map((column, field) =>
+      '<td role="cell">' + cellLabel(column) + '<textarea rows="2" maxlength="600" data-sheet="' + sheet.id + '" data-row="' + rowIndex +
       '" data-cell="' + field + '" aria-label="' + esc(sheet.name + ', строка ' + (rowIndex + 1) + ', ' + column) + '">' +
       esc(row[field] ?? '') + '</textarea></td>').join('') + '</tr>').join('');
     return '<section class="worksheet" aria-labelledby="sheet-' + sheet.id + '"><h3 id="sheet-' + sheet.id + '">' +
       esc(sheet.name) + '</h3><p class="note">Заполнить от ' + sheet.min + ' строк.</p>' +
-      '<div class="table-wrap"><table><thead><tr>' + worksheetHeaders(sheet) + '</tr></thead><tbody>' +
+      '<div class="table-wrap worksheet-table"><table role="table"><thead role="rowgroup"><tr role="row">' + worksheetHeaders(sheet) + '</tr></thead><tbody role="rowgroup">' +
       cells + '</tbody></table></div><button class="button" data-add-row="' + sheet.id + '">Добавить строку</button></section>';
   }).join('');
 }
@@ -33,7 +83,7 @@ function studyReview(stageIndex, saved) {
 }
 
 function worksheetReference(sheet, rows) {
-  return '<h4>' + esc(sheet.name) + '</h4>' + table(sheet.columns, rows);
+  return '<h4>' + esc(sheet.name) + '</h4>' + table(sheet.columns, rows, true);
 }
 
 function worksheetExampleRows(stage, sheet, objective = 'total') {

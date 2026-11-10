@@ -4,6 +4,7 @@ const stationNav = document.querySelector('#station-nav');
 const statuses = { prepared: 'Подготовлена', inFlight: 'В полёте', completed: 'Завершена', cancelled: 'Отменена' };
 const positions = [[8.4,75], [19.4,60], [31.1,68.25], [42,50.75], [53.1,64], [63.75,47.5], [76.7,55.25], [89.4,31]];
 const progress = readLocal('outpost-case-answers', {});
+const reviews = readLocal('outpost-worksheet-reviews', {});
 const worksheets = readLocal('outpost-worksheets', {});
 const drafts = readLocal('outpost-drafts', {});
 const comparison = readLocal('outpost-comparison', {});
@@ -11,7 +12,13 @@ const browserDemo = Boolean(window.outpostBrowserApi);
 const partyStorage = browserDemo ? 'sessionStorage' : 'localStorage';
 const gameSession = { id: readLocal('outpost-party', null, partyStorage), game: null, missions: [], selected: null,
   journal: null, logs: [], lastCommand: null, message: '', failed: false, busy: false };
+const savedJournal = readLocal('outpost-party-journal', null, partyStorage);
+if (gameSession.id && savedJournal?.partyId === gameSession.id) {
+  gameSession.logs = savedJournal.entries;
+  gameSession.lastCommand = gameSession.logs.find(entry => entry.method === 'POST') ?? null;
+}
 const simNotebook = readLocal('outpost-e01-notebook', {});
+let currentAttempt = readLocal('outpost-e01-attempt', null, partyStorage);
 let simTrack = readLocal('outpost-sim-track', null, partyStorage);
 let simChecked = readLocal('outpost-sim-checked', null, partyStorage);
 let simGoal = readLocal('outpost-sim-goal', null);
@@ -20,7 +27,7 @@ let view = 'quest';
 let leavePrimer;
 let lastMainRoute = readLocal('outpost-main-route', '#simulator-learn', 'sessionStorage');
 
-const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|journal|compare|catalog|actions|materials|dossier|reference|project|build(?:-[1-4])?))?$/;
+const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|build(?:-[1-4])?))?$/;
 const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|project|build(?:-[1-4])?))?)$/;
 const stationRoute = /^#(station|reference|worksheet)-([1-8])$/;
 if (!mainRoute.test(lastMainRoute)) lastMainRoute = '#simulator-learn';
@@ -35,18 +42,22 @@ function saveLocal(key, value, storage = 'localStorage') {
   catch { /* The current page still works without browser storage. */ }
 }
 
+function sheetsFilled(index) {
+  return LearningCase.stages[index].sheets.every(sheet => completeRows(sheet, worksheets[index] ?? {}) >= sheet.min);
+}
+
 function completed(index) {
-  return LearningCase.stages[index].quiz.every((_, question) => progress[index + '-' + question] === true) &&
-    LearningCase.stages[index].sheets.every(sheet => completeRows(sheet, worksheets[index] ?? {}) >= sheet.min);
+  return Boolean(reviews[index]) && sheetsFilled(index) &&
+    LearningCase.stages[index].quiz.every((_, question) => progress[index + '-' + question] === true);
 }
 
 function paintNavigation() {
   const count = Course.stages.filter((_, index) => completed(index)).length;
   const next = Course.stages.findIndex((_, index) => !completed(index));
-  const e01Done = Boolean(simNotebook.catalog73?.repeatLaunch || simNotebook.catalog84?.repeatLaunch);
-  document.querySelector('#map-status').textContent = count + ' из 8 станций пройдено';
+  const e01Done = completedE01('catalog73') || completedE01('catalog84');
+  document.querySelector('#map-status').textContent = count + ' из 8 станций завершено';
   const link = document.querySelector('#continue-link');
-  link.href = next < 0 ? '#simulator-scenarios' : count ? '#station-' + (next + 1) : '#simulator-project';
+  link.href = next < 0 ? (browserDemo ? '#station-7' : '#simulator-scenarios') : count ? '#station-' + (next + 1) : '#simulator-project';
   link.textContent = next < 0 ? 'К проверкам проекта' : count ? 'Продолжить проект' :
     e01Done ? 'Связать E01 с проектом' : 'С чего начать';
   const navigation = Course.stages.map((stage, index) => ({
@@ -93,7 +104,7 @@ function route(initial = false) {
   if (view === 'sim') {
     renderSimulator();
     if (simUsesGame() && gameSession.id && !gameSession.game && !gameSession.busy && location.protocol !== 'file:') {
-      runGame(async () => refreshGame(), 'Партия загружена.');
+      runGame(async () => refreshGame(false), 'Партия загружена.');
     }
   } else if (view === 'reference') {
     renderReference();
@@ -102,7 +113,9 @@ function route(initial = false) {
   } else {
     renderQuest();
   }
-  if (match?.[1] === 'worksheet') focusWorksheet();
+  const source = hash.startsWith('#simulator-dossier-') ? document.getElementById(hash.slice(1)) : null;
+  if (source) source.focus();
+  else if (match?.[1] === 'worksheet') focusWorksheet();
   else if (!initial) {
     if (hash === '#map') window.scrollTo(0, 0);
     else {
@@ -150,19 +163,20 @@ function renderQuest() {
     '</p><h1>' + esc(stage.name) + '</h1><p>' + esc(stage.goal) + '</p>' +
     '<section class="station-section"><h2>1. Изучите условие</h2>' + context +
     '<p>' + esc(caseStage.brief) + '</p><p class="note">Источники · ' +
-    esc(caseStage.source) + ' · <a href="#simulator-dossier">Открыть досье</a></p>' +
+    sourceLinks(caseStage.source) + ' · <a href="#simulator-dossier">Открыть досье</a></p>' +
     '<p><strong>Приём.</strong> ' + esc(caseStage.lesson) + '</p>' +
     '<p class="example"><strong>Разобранный пример.</strong> ' + esc(caseStage.example) + '</p>' +
     animation + '</section>' +
     '<section class="station-section" id="worksheets"><h2>2. Запишите решение</h2><p>' + esc(caseStage.task) + '</p>' +
     '<p><strong>Зачем.</strong> ' + esc(caseStage.why) + '</p>' +
+    (number === 7 ? lab07HttpGuide() : '') +
     '<p class="note">Рабочие листы сохраняются в этом браузере. Сравните обоснование с эталоном после проверки.</p>' +
     studyWorksheet(selectedStation, saved) + draft + '</section>' +
     '<section class="station-section" aria-labelledby="challenge-title"><h2 id="challenge-title">3. Проверьте себя</h2>' +
     '<div id="station-progress"></div>' + caseStage.quiz.map(challengeMarkup).join('') +
     '<p class="note">' + esc(caseStage.next) + '</p>' +
     '<div class="actions"><a class="button" href="#reference-' + number + '">Свериться с эталоном</a>' +
-    '<a class="button primary" id="next-station" href="' + (number === 8 ? '#simulator-scenarios' : '#station-' + (number + 1)) +
+    '<a class="button primary" id="next-station" href="' + (number === 8 ? (browserDemo ? '#station-7' : '#simulator-scenarios') : '#station-' + (number + 1)) +
     '">' + (number === 8 ? 'К проверкам проекта' : 'Следующая станция') + '</a>' +
     '<button class="text-button" data-export-study>Скачать мои решения</button></div></section></article>';
   const animationHost = main.querySelector('[data-station-animation]');
@@ -189,6 +203,8 @@ function updateStationProgress() {
   const rows = sheets.map(sheet => sheet.name + ' · ' + completeRows(sheet, saved) + '/' + sheet.min).join(' · ');
   document.querySelector('#station-progress').innerHTML = '<p class="note">' + count + ' из ' + tasks.length +
     ' испытаний решено. <button class="text-button" data-scroll-sheets>К рабочим листам</button></p><p class="note">' + esc(rows) +
+    '</p><p><strong>' + (sheetsFilled(selectedStation) ? 'Листы заполнены' : 'Листы заполняются') +
+    '</strong> · ' + (reviews[selectedStation] ? 'Решение сверено вами' : 'Ожидает вашей сверки') +
     '</p><div class="progress-track" aria-hidden="true"><span style="--progress:' + count / tasks.length * 100 + '%"></span></div>';
   const next = document.querySelector('#next-station');
   next.hidden = !completed(selectedStation);
@@ -224,11 +240,16 @@ function renderReference() {
       esc(draft) + '</p></div>' : '') +
     (worksheetsReview ? '<section aria-label="Ваши записи"><h3>Ваши записи</h3>' + worksheetsReview + '</section>' : '') +
     caseStageReference(selectedStation, true) +
+    '<section class="station-section"><h3>Отметка о сверке</h3><ul><li>Сопоставьте значения с указанным источником и выбранным сценарием.</li>' +
+    '<li>Проверьте, что объяснение связывает данные с вашим решением.</li><li>Сверьте проверяемый результат с примером и исправьте расхождения.</li></ul>' +
+    '<label><input type="checkbox" data-review-station' + (reviews[selectedStation] ? ' checked' : '') +
+    (sheetsFilled(selectedStation) ? '' : ' disabled') + '> Я сверил(а) решение с эталоном</label>' +
+    (sheetsFilled(selectedStation) ? '' : '<p class="note">Сначала заполните обязательные строки рабочих листов.</p>') + '</section>' +
     '<h3>Ответы на испытания</h3>' + stepList(LearningCase.stages[selectedStation].quiz.map(task =>
       (task.choices?.[task.answer] ?? task.answer) + '. ' + task.reason)) + '</article>';
 }
 
-async function request(method, path, data) {
+async function request(method, path, data, record = true) {
   const headers = { Accept: 'application/json' };
   if (gameSession.id) headers['X-Game-Id'] = gameSession.id;
   if (data !== undefined) headers['Content-Type'] = 'application/json';
@@ -236,18 +257,21 @@ async function request(method, path, data) {
     fetch(path, { method, headers, body: data === undefined ? undefined : JSON.stringify(data) }));
   const body = await response.json();
   const entry = { method, path, status: response.status, body, request: data, location: response.headers.get('Location') };
-  gameSession.logs.unshift(entry);
-  gameSession.logs = gameSession.logs.slice(0, 14);
-  if (method === 'POST') gameSession.lastCommand = entry;
+  if (record) {
+    const newParty = method === 'POST' && response.ok && path.startsWith('/api/demo/games?');
+    gameSession.logs = newParty ? [entry] : [entry, ...gameSession.logs].slice(0, 32);
+    if (method === 'POST') gameSession.lastCommand = entry;
+    saveLocal('outpost-party-journal', { partyId: newParty ? body.id : gameSession.id, entries: gameSession.logs }, partyStorage);
+  }
   if (!response.ok) throw Object.assign(new Error(body.title ?? 'Запрос отклонён.'), { code: body.code, status: response.status });
   return body;
 }
 
-async function refreshGame() {
-  gameSession.game = await request('GET', '/api/game');
-  gameSession.missions = await request('GET', '/api/missions');
+async function refreshGame(record = true) {
+  gameSession.game = await request('GET', '/api/game', undefined, record);
+  gameSession.missions = await request('GET', '/api/missions', undefined, record);
   const id = gameSession.game.activeExpedition?.id ?? gameSession.game.expeditions[0]?.id;
-  gameSession.selected = id ? await request('GET', '/api/expeditions/' + id) : null;
+  gameSession.selected = id ? await request('GET', '/api/expeditions/' + id, undefined, record) : null;
   gameSession.journal = null;
 }
 
@@ -267,7 +291,10 @@ async function runGame(action, message) {
       gameSession.id = null;
       gameSession.game = null;
       gameSession.selected = null;
+      gameSession.logs = [];
+      gameSession.lastCommand = null;
       saveLocal('outpost-party', null, partyStorage);
+      saveLocal('outpost-party-journal', null, partyStorage);
     }
     gameSession.message = error.status
       ? error.status + ' · ' + error.message
@@ -308,7 +335,6 @@ async function gameAction(action, value) {
     gameSession.game = newGame;
     gameSession.selected = null;
     gameSession.journal = null;
-    gameSession.logs = [gameSession.lastCommand];
     simTrack = { id: newGame.id, exercise: value === 'e01' || value === 'launch-transfer' ? 'e01' : 'party' };
     saveLocal('outpost-party', newGame.id, partyStorage);
     saveLocal('outpost-sim-track', simTrack, partyStorage);
@@ -359,22 +385,38 @@ function simObservation() {
   return JSON.stringify([gameSession.game, gameSession.selected]);
 }
 
-function simEvidenceRecord() {
+function e01CatalogKey(game) {
+  return game.scenarioId === 'launch-transfer' ? 'catalog84' : 'catalog73';
+}
+
+function completedE01(key) {
+  const attempt = readLocal('outpost-e01-completed-' + key, simNotebook[key]);
+  return attempt?.firstLaunch && attempt.repeatLaunch ? attempt : null;
+}
+
+function attemptFor(game) {
+  if (currentAttempt?.partyId === game.id) return currentAttempt;
+  const key = e01CatalogKey(game);
+  return [completedE01(key), simNotebook[key]].find(attempt => attempt?.partyId === game.id) ?? null;
+}
+
+function saveAttempt(fields) {
   const game = gameSession.game;
-  const key = game.scenarioId === 'launch-transfer' ? 'catalog84' : 'catalog73';
-  if (simNotebook[key]?.partyId !== game.id) {
-    simNotebook[key] = { partyId: game.id };
+  currentAttempt = { partyId: game.id, ...attemptFor(game), ...fields };
+  saveLocal('outpost-e01-attempt', currentAttempt, partyStorage);
+  if (currentAttempt.firstLaunch && currentAttempt.repeatLaunch) {
+    const key = e01CatalogKey(game);
+    simNotebook[key] = currentAttempt;
+    saveLocal('outpost-e01-completed-' + key, currentAttempt);
   }
-  return simNotebook[key];
 }
 
 function rememberSimEvidence(event, beforeStock) {
   const stock = gameSession.game.inventory.onHand;
   const trip = gameSession.selected;
-  simEvidenceRecord()[event] = { http: gameSession.lastCommand.status, stock,
+  saveAttempt({ [event]: { http: gameSession.lastCommand.status, exchange: gameSession.lastCommand, stock,
     status: trip.status, history: trip.history.map(item => item.toStatus),
-    ...(beforeStock ? { spent: { fuel: beforeStock.fuel - stock.fuel, rations: beforeStock.rations - stock.rations } } : {}) };
-  saveLocal('outpost-e01-notebook', simNotebook);
+    ...(beforeStock ? { spent: { fuel: beforeStock.fuel - stock.fuel, rations: beforeStock.rations - stock.rations } } : {}) } });
 }
 
 function exportStudy() {
@@ -382,16 +424,22 @@ function exportStudy() {
     station: index + 1,
     name: stage.name,
     note: drafts[index] ?? '',
+    selfReviewed: Boolean(reviews[index]),
     worksheets: Object.fromEntries(LearningCase.stages[index].sheets.map(sheet => [sheet.name,
       studyRows(sheet, worksheets[index] ?? {}).map(row => Object.fromEntries(sheet.columns.map((column, cell) =>
         [column, row[cell] ?? ''])))]))
   }));
-  if (Object.keys(simNotebook).length) output.unshift({
-    station: 'E01', name: 'Проверка запуска', prediction: simNotebook.prediction ?? '',
-    ...(browserDemo ? { simulator: 'browser-model' } : {}),
-    transferPrediction: simNotebook.transferPrediction ?? '',
-    studentApiNote: simNotebook.studentApiNote ?? '',
-    observations: { catalog73: simNotebook.catalog73 ?? null, catalog84: simNotebook.catalog84 ?? null }
+  const observations = { catalog73: completedE01('catalog73'), catalog84: completedE01('catalog84') };
+  if (Object.keys(simNotebook).length || observations.catalog73 || observations.catalog84) output.unshift({
+    station: 'E01', name: 'Проверка запуска',
+    simulatorEvidence: {
+      mode: browserDemo ? 'browser-model' : 'reference-server',
+      prediction: simNotebook.prediction ?? '',
+      transferPrediction: simNotebook.transferPrediction ?? '',
+      observations
+    },
+    studentApiEvidence: { ...simNotebook.studentApi,
+      ...(simNotebook.studentApiNote ? { previousNote: simNotebook.studentApiNote } : {}) }
   });
   const url = URL.createObjectURL(new Blob([JSON.stringify(output, null, 2)], { type: 'application/json;charset=utf-8' }));
   const link = document.createElement('a');
@@ -443,8 +491,7 @@ main.addEventListener('submit', event => {
       const selected = event.target.querySelector('input[name="selection"]:checked');
       if (!selected) return;
       if (operation === 'launch') {
-        simEvidenceRecord().source = selected.value;
-        saveLocal('outpost-e01-notebook', simNotebook);
+        saveAttempt({ source: selected.value });
         gameAction('transition', 'launch');
       } else if (operation === 'goal') {
         simGoal = { id: gameSession.game.id, choice: selected.value };
@@ -467,27 +514,43 @@ main.addEventListener('input', event => {
   const input = event.target;
   const notebookField = {
     'sim-prediction': 'prediction',
-    'sim-transfer-prediction': 'transferPrediction',
-    'sim-api-check': 'studentApiNote'
+    'sim-transfer-prediction': 'transferPrediction'
   }[input.id];
   if (notebookField) {
     simNotebook[notebookField] = input.value;
     saveLocal('outpost-e01-notebook', simNotebook);
   }
-  if (input.id === 'draft') {
+  if (input.dataset.apiEvidence) {
+    const evidence = simNotebook.studentApi ??= {};
+    evidence[input.dataset.apiEvidence] = input.value;
+    saveLocal('outpost-e01-notebook', simNotebook);
+  }
+  const editsDraft = input.id === 'draft';
+  if (!editsDraft && !input.dataset.sheet) return;
+  const wasComplete = completed(selectedStation);
+  if (editsDraft) {
     drafts[selectedStation] = input.value;
     saveLocal('outpost-drafts', drafts);
-  }
-  if (input.dataset.sheet) {
-    const wasComplete = completed(selectedStation);
+  } else {
     const saved = worksheets[selectedStation] ??= {};
     const sheet = LearningCase.stages[selectedStation].sheets.find(item => item.id === input.dataset.sheet);
     const rows = saved[sheet.id] ??= [sheet.columns.map(() => '')];
     rows[Number(input.dataset.row)][Number(input.dataset.cell)] = input.value;
     saveLocal('outpost-worksheets', worksheets);
-    updateStationProgress();
-    if (wasComplete !== completed(selectedStation)) paintNavigation();
   }
+  if (reviews[selectedStation]) {
+    delete reviews[selectedStation];
+    saveLocal('outpost-worksheet-reviews', reviews);
+  }
+  updateStationProgress();
+  if (wasComplete !== completed(selectedStation)) paintNavigation();
+});
+
+main.addEventListener('change', event => {
+  if (!event.target.hasAttribute('data-review-station')) return;
+  reviews[selectedStation] = event.target.checked;
+  saveLocal('outpost-worksheet-reviews', reviews);
+  paintNavigation();
 });
 
 window.addEventListener('hashchange', () => route());

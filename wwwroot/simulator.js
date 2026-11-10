@@ -39,7 +39,8 @@ function simPrediction(id, hint, value) {
 }
 
 function simulatorScreen() {
-  return location.hash.slice('#simulator'.length).replace(/^-/, '') || 'run';
+  const screen = location.hash.slice('#simulator'.length).replace(/^-/, '');
+  return screen.startsWith('dossier-') ? 'dossier' : screen || 'run';
 }
 
 function simUsesGame() {
@@ -115,11 +116,17 @@ function simMaterials() {
 }
 
 function simDossier() {
+  const documents = rows => rows.map(([id, title, description]) =>
+    '<article class="dossier-source" id="simulator-dossier-' + sourceAnchor(id) + '" tabindex="-1"><h4>' +
+    esc(id + ' · ' + title) + '</h4><p>' + esc(description) + '</p></article>').join('');
   return simPanel('Исходные данные', 'Донесение с орбиты',
-    table(['ID', 'Источник', 'Условие'], LearningCase.documents) +
+    '<p><a class="button primary" href="' + esc(lastMainRoute) + '">Вернуться к шагу</a></p>' +
+    '<p><a href="#simulator-dossier-b1">Исходный бриф · Б1–Б5</a> · <a href="#simulator-dossier-c1">Донесение · С1–С6</a></p>' +
+    '<section><h3>Исходный бриф · Б1–Б5</h3>' + documents(Course.sources) + '</section>' +
+    '<section><h3>Донесение · С1–С6</h3>' + documents(LearningCase.documents) + '</section>' +
     '<h3>Исходный каталог</h3>' + table(['Код', 'Миссия', 'Топливо', 'Пайки', 'Награда'], Course.missions) +
     '<p>В задании E01 условия текущего каталога меняются с 7/3 на 8/4. Подготовленный рейс хранит снимок 6/2.</p>',
-    simReturn(), simLink('Материалы', 'materials'));
+    '', simLink('Материалы', 'materials'));
 }
 
 function simReference() {
@@ -263,8 +270,7 @@ function simE01(game) {
   const step = trip.status === 'prepared' ? 0 : trip.status === 'inFlight' && !checked ? 1 : 2;
   const label = transfer ? 'Рейс E01 · изменённый каталог 8/4' : 'Рейс E01 · исходный каталог 7/3';
   const journal = simLink('Журнал и ответы HTTP', 'journal');
-  const attempt = simNotebook[transfer ? 'catalog84' : 'catalog73'];
-  const recorded = attempt?.partyId === game.id ? attempt : null;
+  const recorded = attemptFor(game);
   let panel;
   if (step === 0) {
     const prompt = '<form data-sim-form="launch"><fieldset class="sim-pick"><legend>По какой записи, по вашему прогнозу, сервер спишет ресурсы?</legend>' +
@@ -294,7 +300,7 @@ function simE01(game) {
       simPair(game.inventory.onHand) + '</strong></p>' + simEvents(trip) + '</div>';
     const prediction = (transfer ? simNotebook.transferPrediction : simNotebook.prediction)?.trim();
     const evidence = transfer ? table(['Каталог', 'Первый запуск', 'Повтор', 'Остаток после повтора'],
-      [['7/3', simNotebook.catalog73], ['8/4', simNotebook.catalog84]].map(([name, attempt]) => [
+      [['7/3', completedE01('catalog73')], ['8/4', completedE01('catalog84')]].map(([name, attempt]) => [
         name, attempt?.firstLaunch?.http ?? '—', attempt?.repeatLaunch?.http ?? '—',
         attempt?.repeatLaunch ? simPair(attempt.repeatLaunch.stock) : '—'
       ])) : '';
@@ -307,19 +313,23 @@ function simE01(game) {
 }
 
 function simProjectBridge() {
-  const rows = [['7/3', simNotebook.catalog73], ['8/4', simNotebook.catalog84]].flatMap(([catalog, observed]) =>
-    observed?.repeatLaunch ? [[catalog, observed.firstLaunch?.http ?? '—', observed.repeatLaunch.http,
+  const rows = [['7/3', completedE01('catalog73')], ['8/4', completedE01('catalog84')]].flatMap(([catalog, observed]) =>
+    observed ? [[catalog, observed.firstLaunch.http, observed.repeatLaunch.http,
       simPair(observed.repeatLaunch.stock)]] : []);
+  const studentApi = simNotebook.studentApi ?? {};
   return simPanel('Объём проекта', 'Какое решение подходит вашей задаче',
     table(['Что требуется', 'Достаточное решение'], [
       ['Один учебный рейс, состояние сбрасывается при перезапуске', 'E01 в памяти. Один GET для состояния и один POST для запуска.'],
       ['Несколько рейсов и история после перезапуска', 'Проект с SQLite. Понадобятся модель данных, каталог и сохранённые события.']
     ]) +
-    (rows.length ? '<h3>Ваши наблюдения по E01</h3>' + table(['Каталог', 'Запуск', 'Повтор', 'Остаток'], rows) :
-      '<p>Чтобы получить собственные наблюдения для проекта, выполните запуск и его повтор в E01.</p>') +
-    '<p><strong>Для сдачи E01</strong> подготовьте свой C#‑проект и протокол проверки каталогов 7/3 и 8/4. ' +
-    'Если нужен проект с хранением истории, перенесите правило снимка в ЛР04–ЛР06, а проверки запуска и повтора — в ЛР07.</p>',
-    rows.length ? '<button class="button primary" type="button" data-export-study>Скачать протокол E01</button>' :
+    '<h3>1. Прогоны тренажёра</h3>' + (rows.length ? table(['Каталог', 'Запуск', 'Повтор', 'Остаток'], rows) :
+      '<p>Результаты появятся после запуска и повтора в E01.</p>') +
+    '<h3>2. Проверка собственного API</h3><p>Для сдачи приложите папку <code>first-api</code>, фактические HTTP-запросы и ответы по обоим каталогам, ' +
+    'состояние после каждой команды и объяснение выбора источника стоимости.</p>' +
+    '<ul><li><a href="#simulator-build-3">Каталог 7/3</a> · ' + (studentApi.catalog73?.trim() ? 'Протокол записан' : 'Ожидает протокола') +
+    '</li><li><a href="#simulator-build-4">Каталог 8/4</a> · ' + (studentApi.catalog84?.trim() ? 'Протокол записан' : 'Ожидает протокола') + '</li></ul>' +
+    '<p>Если нужен проект с хранением истории, перенесите правило снимка в ЛР04–ЛР06, а проверки запуска и повтора — в ЛР07.</p>',
+    rows.length || Object.keys(simNotebook).length ? '<button class="button primary" type="button" data-export-study>Скачать протокол E01</button>' :
       simLink('Пройти практику E01', 'learn', true),
     '<a class="sim-text-link" href="#map">Продолжить по карте ЛР01–ЛР08</a>');
 }
@@ -429,6 +439,11 @@ function simComparison(game) {
 
 function simBuild(step) {
   const local = location.protocol === 'file:';
+  const studentApi = simNotebook.studentApi ?? {};
+  const apiField = (key, title, hint, limit = 12000) => '<label class="sim-prediction"><strong>' + esc(title) +
+    '</strong><span>' + esc(hint) + '</span><textarea data-api-evidence="' + key + '" rows="4" maxlength="' + limit + '">' +
+    esc(studentApi[key] ?? '') + '</textarea></label>';
+  const apiHint = 'Вставьте вывод проверки или запишите реальные запросы, ответы и состояние после каждой команды.';
   const steps = [
     ['Поднимите первый сервер',
       '<p>Распакуйте <a href="student-kit.zip" download>студенческий комплект</a>. Откройте терминал в папке <code>first-api</code> и проверьте, что установлен .NET SDK 10.</p>' +
@@ -445,16 +460,18 @@ function simBuild(step) {
       '<p>Если сборка не проходит, начните с первой строки ошибки в <code>Program.cs</code>. Объявления <code>record</code> должны быть после <code>app.Run()</code>.</p>'],
     ['Проверьте свой обработчик',
       '<p>Запустите сервер той же командой. В другом PowerShell из папки <code>first-api</code> выполните проверку. Она читает входные данные, отправляет первый и повторный запуск и сверяет состояние.</p>' +
-      simCode('./Check-E01.ps1') +
-      '<p>Ручной вариант есть в <code>requests.http</code>. Выполните GET, затем два одинаковых POST и ещё один GET. Между POST оставьте сервер запущенным.</p>' +
+      simCode('./Check-E01.ps1 -AsJson') +
+      '<p>Для ручной проверки откройте <code>requests.http</code>. Выполните GET перед запуском и после каждого из двух одинаковых POST. Между командами оставьте сервер запущенным.</p>' +
       '<p>Если первый ответ 404, проверьте адрес <code>/api/expeditions/E01/transitions</code>. Если второй POST меняет запас, перенесите проверку статуса перед списанием.</p>' +
-      '<label class="sim-prediction" for="sim-api-check"><strong>Результат моего API</strong>' +
-      '<span>Запишите два HTTP-кода, статус, остаток и историю после каждой команды. Добавьте своё объяснение выбора источника.</span><textarea id="sim-api-check" rows="2" maxlength="2000">' +
-      esc(simNotebook.studentApiNote ?? '') + '</textarea></label>'],
+      '<h3>Мой API · протокол 7/3</h3>' + apiField('catalog73', 'Фактические запросы и ответы · 7/3', apiHint) +
+      apiField('reason', 'Почему обработчик использует этот источник', 'Свяжите выбор источника с условиями рейса и результатом обоих прогонов.', 2000) +
+      (simNotebook.studentApiNote ? '<details><summary>Моя предыдущая заметка</summary><p class="sim-saved">' +
+        esc(simNotebook.studentApiNote) + '</p></details>' : '')],
     ['Перенесите проверку на каталог 8/4',
       '<p>Остановите сервер и запустите его с изменённым каталогом. Через GET проверьте, что <code>currentCost</code> стал 8/4, а <code>agreedCost</code> остался прежним. Запишите прогноз до запуска.</p>' +
-      simCode('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true\n# Во втором терминале\n./Check-E01.ps1 -Catalog "8/4"') +
+      simCode('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true\n# Во втором терминале\n./Check-E01.ps1 -Catalog "8/4" -AsJson') +
       simPrediction('sim-transfer-prediction', 'Что изменится в ответе после смены каталога? Запишите ожидаемый остаток и статус.', simNotebook.transferPrediction) +
+      '<h3>Мой API · протокол 8/4</h3>' + apiField('catalog84', 'Фактические запросы и ответы · 8/4', apiHint) +
       '<p>Сравните свой протокол с тренажёром. Затем перенесите правило снимка в проект с SQLite.</p>']
   ];
   const current = Math.min(Math.max(step || 1, 1), steps.length);
@@ -462,7 +479,8 @@ function simBuild(step) {
   const next = current < steps.length ? simLink('Следующий шаг', 'build-' + (current + 1), true)
     : local ? simLink('К проекту с SQLite', 'project', true)
       : simButton('Проверить перенос в тренажёре', 'new', 'launch-transfer');
-  const protocol = current === 4 ? '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол и листы</button>' : '';
+  const protocol = current === 4 ? simLink('К итогам проекта', 'project') +
+    '<button type="button" class="text-button sim-text-link" data-export-study>Скачать протокол и листы</button>' : '';
   return simChapterRail(3) + simPanel('04 · Собственный API · шаг ' + current + ' из ' + steps.length,
     title, contents, next, current > 1 ? simLink('Предыдущий шаг', 'build-' + (current - 1)) + protocol : simLink('К проверке рейса', ''));
 }

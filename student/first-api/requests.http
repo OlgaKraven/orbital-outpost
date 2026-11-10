@@ -9,11 +9,17 @@ Content-Type: application/json
 
 {"action":"launch"}
 
+### Состояние после первого запуска
+GET {{base}}/api/game
+
 ### Повторить ту же команду без перезапуска сервера
 POST {{base}}/api/expeditions/E01/transitions
 Content-Type: application/json
 
 {"action":"launch"}
+
+### Состояние после повтора
+GET {{base}}/api/game
 
 ### Неверная команда
 POST {{base}}/api/expeditions/E01/transitions

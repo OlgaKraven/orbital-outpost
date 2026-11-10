@@ -3,11 +3,17 @@ function esc(value) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 }
 
-function table(headers, rows) {
-  return '<div class="table-wrap"><table><thead><tr>' +
+function cellLabel(header) {
+  return '<span class="mobile-cell-label" aria-hidden="true">' + esc(header) + '</span>';
+}
+
+function table(headers, rows, stacked = false) {
+  const role = name => stacked ? ' role="' + name + '"' : '';
+  return '<div class="table-wrap' + (stacked ? ' worksheet-table' : '') + '"><table' + role('table') + '><thead' + role('rowgroup') + '><tr' + role('row') + '>' +
     headers.map(value => '<th scope="col">' + esc(value) + '</th>').join('') +
-    '</tr></thead><tbody>' + rows.map(row => '<tr>' +
-    row.map(value => '<td>' + esc(value) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+    '</tr></thead><tbody' + role('rowgroup') + '>' + rows.map(row => '<tr' + role('row') + '>' +
+    row.map((value, index) => '<td' + role('cell') + '>' + (stacked ? cellLabel(headers[index]) : '') + esc(value) + '</td>').join('') +
+    '</tr>').join('') + '</tbody></table></div>';
 }
 
 function stepList(items) {

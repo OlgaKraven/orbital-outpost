@@ -11,7 +11,7 @@ const fixtures = JSON.parse(fixtureText);
 const context = createContext({});
 context.window = context;
 runInContext([courseSource, caseSource, references, studySource].join('\n'), context);
-const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference, worksheetExampleRows, e01Reference } = context;
+const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference, worksheetExampleRows, e01Reference, lab07HttpGuide } = context;
 
 for (const [index, stage] of LearningCase.stages.entries()) {
   for (const sheet of stage.sheets) {
@@ -253,7 +253,7 @@ const launch = document('Первый прототип API · Рейс E01', 'П
       'Выбрать источник стоимости между agreedCost и currentCost. Записать причину выбора в протоколе. Рассчитать остаток каждого ресурса и присвоить stock новый Resources.',
       'Присвоить статус inFlight, добавить его в history, вернуть 200 с полями status и stock.'
     ]) + '<p><strong>Проверка сборки.</strong> Запустить dotnet run. При ошибке открыть первую строку с именем Program.cs и номером строки. Сверить скобки обработчика и расположение кода перед app.Run().</p>'),
-  section('verify', '4. Проверить двумя запросами', '<p>В файле <code>requests.http</code> выполнить GET и два одинаковых POST подряд. Между запросами сервер продолжает работать. При отсутствии поддержки .http выполнить блок PowerShell ниже дважды.</p>' +
+  section('verify', '4. Проверить запуск и повтор', '<p>В файле <code>requests.http</code> выполнить GET перед запуском и после каждого из двух одинаковых POST. Между запросами сервер продолжает работать. При отсутствии поддержки .http выполнить GET, а затем блок PowerShell ниже дважды.</p>' +
     code(`$launch = @{
     Uri = 'http://localhost:5201/api/expeditions/E01/transitions'
     Method = 'Post'
@@ -269,9 +269,9 @@ try {
     [int]$_.Exception.Response.StatusCode
 }
 Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 6`) +
-    '<p>Для каждого запроса записать HTTP-код, статус рейса, запас и историю. Для автоматической проверки свежего запуска можно выполнить <code>./Check-E01.ps1</code> из папки <code>first-api</code>. Затем остановить сервер и запустить с новыми текущими условиями.</p>' +
+    '<p>Для каждого запроса записать HTTP-код, статус рейса, запас и историю. В свежей партии можно получить готовый протокол реальных запросов командой <code>./Check-E01.ps1 -AsJson</code> из папки <code>first-api</code>. Затем остановить сервер и запустить с новыми текущими условиями.</p>' +
     code('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true') +
-    '<p>Проверить через GET, что каталог стал 8/4. Предсказать результат запуска и его повтора. Сдать папку <code>first-api</code> и протокол обоих наборов.</p>'),
+    '<p>Проверить через GET, что каталог стал 8/4. Предсказать результат запуска и его повтора. Для автоматической проверки выполнить <code>./Check-E01.ps1 -Catalog "8/4" -AsJson</code>. Сдать папку <code>first-api</code> и фактический HTTP-протокол обоих наборов. Результаты тренажёра сохранить отдельно.</p>'),
   section('reference', '5. Сверить результат', '<details><summary>Открыть эталон E01 после проверки</summary>' + e01Reference() + '</details>'),
   section('next', '6. Перейти к проекту по карте', '<p>На станции 6 перенести идею снимка в модель SQLite, на станции 7 — свои проверки в протокол API. В тренажёре открыть «Сценарии» и выбрать «Перенос E01». У рейса будет выданный сервером UUID. В минимальной практике его роль выполняет постоянный код E01.</p>')
 ].join(''), true);
@@ -291,7 +291,7 @@ const studentGuide = document('Задание на разработку прот
     '</nav>' + LearningCase.stages.map((stage, index) =>
     '<h3 id="station-' + (index + 1) + '">ЛР0' + (index + 1) + '. ' + esc(Course.stages[index].name) + '</h3><p>' + esc(stage.task) +
     '</p><p><strong>Опора.</strong> ' + esc(stage.source) + '.</p><p><strong>Приём.</strong> ' + esc(stage.lesson) +
-    '</p><p><strong>Зачем.</strong> ' + esc(stage.why) + '</p><p>' + esc(stage.next) + '</p>'
+    '</p><p><strong>Зачем.</strong> ' + esc(stage.why) + '</p><p>' + esc(stage.next) + '</p>' + (index === 6 ? lab07HttpGuide() : '')
   ).join('')),
   section('api', '4. Расширить API для нескольких рейсов', stepList([
     'Открыть терминал в starter. Выполнить команды ниже. Проверить GET /healthz и GET /study/fixtures. Открыть requests.http. Эти запросы запускаются после старта приложения.',
@@ -302,7 +302,7 @@ const studentGuide = document('Задание на разработку прот
     'В requests.http подставить ID партии из ответа её создания и ID рейса из activeExpedition.id. Прогнать запросы на своей сборке. Для проверки 409 выполнить GET до и после команды и сравнить состояние.'
   ]) + code('dotnet restore\ndotnet run --urls http://127.0.0.1:5201') +
     '<p>Если редактор не умеет выполнять .http, отправить запросы через PowerShell с Invoke-RestMethod. Пример находится в README.md рядом с проектом. Проверить наличие .NET SDK 10 командой dotnet --version.</p>'),
-  section('proof', '5. Проверить и сдать', '<p><strong>Для E01.</strong> Передать папку first-api и протокол запусков на 7/3 и 8/4. Для обоих наборов зафиксировать HTTP-коды, остаток и историю после повтора.</p>' +
+  section('proof', '5. Проверить и сдать', '<p><strong>Для E01.</strong> Передать папку first-api и протокол своего API на 7/3 и 8/4. Приложить запросы, ответы и состояние после каждой команды. Отдельно объяснить выбор источника списания.</p>' +
     '<p><strong>Для проекта с SQLite.</strong> Приложить исходники, рабочие листы, запись проектного решения и протокол. Для выбранной ветви проверить успех, границу, отказ и чтение после перезапуска.</p>')
 ].join(''), true);
 
