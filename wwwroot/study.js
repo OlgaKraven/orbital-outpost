@@ -28,72 +28,51 @@ function completeRows(sheet, saved) {
 function studyReview(stageIndex, saved) {
   return LearningCase.stages[stageIndex].sheets.map(sheet => {
     const rows = studyRows(sheet, saved);
-    return rows.length ? '<h3>' + esc(sheet.name) + '</h3>' + table(sheet.columns, rows) : '';
+    return rows.length ? worksheetReference(sheet, rows) : '';
   }).join('');
+}
+
+function worksheetReference(sheet, rows) {
+  return '<h4>' + esc(sheet.name) + '</h4>' + table(sheet.columns, rows);
+}
+
+function worksheetExampleRows(stage, sheet, objective = 'total') {
+  const rows = stage.examples[sheet.id] ?? [];
+  if (sheet.id === 'requirements') {
+    const covered = Course.requirements.filter(([id]) => !['R06', 'R08', 'R18', 'R19'].includes(id));
+    return [...covered, ...rows].map(([id, type, ...rest]) => [id, type + ' · подтверждено', ...rest]);
+  }
+  if (sheet.id === 'revisions') return [...Course.revisions.slice(0, 6), ...rows];
+  if (sheet.id === 'matrix') return rows.map(([criterion, weight, a, b]) =>
+    [criterion, weight + '%', a.join(' · '), b.join(' · ')]);
+  if (sheet.id === 'decision' && objective === 'single') return [stage.singleGoal];
+  if (sheet.id === 'decision' && objective === 'both') return [...rows, stage.singleGoal];
+  return rows;
 }
 
 function caseStageReference(stageIndex, interactive = false) {
   const stage = LearningCase.stages[stageIndex];
-  const tableIndex = [0, 0, 1, 0, 0, 0, 0, 0][stageIndex];
-  const headers = stage.sheets[tableIndex].columns;
-  let solution;
-  switch (stageIndex) {
-    case 0:
-      solution = table(headers, stage.answer);
-      break;
-    case 1:
-      solution = table(headers, [...Course.requirements, ...stage.answer]);
-      break;
-    case 2:
-      solution = '<h3>Уточнение формулировок</h3>' + table(stage.sheets[0].columns, Course.revisions) +
-        '<h3>Истории и критерии</h3>' + table(headers, stage.answer);
-      break;
-    case 3:
-      solution = table(['Термин', 'Определение или пример', 'Решение'], [
-        ...Course.glossary.filter(([term]) => !['Миссия', 'Экспедиция', 'Резерв'].includes(term)),
-        ...stage.answer.map(([term, example, decision]) => [term, example, decision])
-      ]);
-      break;
-    case 4:
-      solution = stateDiagram() + table(['ID', 'Правило и предусловие', 'Основание', 'Результат или проверка'], [
-        ...Course.rules,
-        ...stage.answer.map(([id, command, condition, result, source]) => [id, command + ' · ' + condition, source, result])
-      ]);
-      break;
-    case 5:
-      solution = table(['Таблица', 'Поля и ограничения', 'Происхождение'], Course.schema.map(([entity, fields, origin]) => [
-        entity, entity === 'Mission' ? fields + ', Revision · целое > 0' :
-          entity === 'Expedition' ? fields + ', CatalogRevision · целое > 0, ReplacesExpeditionId · UUID или NULL' : fields,
-        entity === 'Mission' ? 'Текущая редакция в каталоге' : origin
-      ])) + '<p>Доступно = физический запас − резерв. Баланс = сумма снимков наград завершённых рейсов.</p>';
-      break;
-    case 6:
-      solution = table(['Требование', 'Наблюдаемая проверка'], [
-        ...Course.requirements.map(([id, , , , check]) => [id, check]),
-        ...stage.answer.map(([id, rule, fields, endpoint, check]) => [id, [rule, fields, endpoint, check].join(' · ')])
-      ]) + '<h3>Контрольные прогоны</h3>' +
-        table(['Сценарий', 'Условие', 'Ожидаемый результат'], LearningCase.outcomes);
-      break;
-    case 7:
-      solution = (interactive ? '<div class="actions">' +
-        '<button class="button" data-objective="total" aria-pressed="true">С4 · максимум за партию</button>' +
-        '<button class="button" data-objective="single" aria-pressed="false">С5 · минимум 150 по M01</button></div>' : '') +
-        '<div id="matrix-live" aria-live="polite">' + caseDecision('total') + '</div>';
-      break;
-  }
-  return '<h3>Эталон по донесению</h3>' + solution + '<p>' + esc(stage.evidence) + '</p>';
+  const comparison = Boolean(stage.singleGoal);
+  const objectives = comparison && interactive ? '<div class="actions" aria-label="Цель партии">' +
+    '<button class="button" data-objective="total" aria-pressed="true">С4 · максимум за партию</button>' +
+    '<button class="button" data-objective="single" aria-pressed="false">С5 · минимум 150 по M01</button></div>' : '';
+  const solution = comparison ? '<div id="matrix-live" aria-live="polite">' + caseDecision(interactive ? 'total' : 'both') + '</div>' :
+    stage.sheets.map(sheet => worksheetReference(sheet, worksheetExampleRows(stage, sheet))).join('');
+  return '<h3>Эталон по донесению</h3><p><strong>Задание для сверки.</strong> ' + esc(stage.task) + '</p>' +
+    objectives + solution + '<p>' + esc(stage.evidence) + '</p>';
 }
 
 function caseDecision(objective) {
-  const single = objective === 'single';
-  return table(['Критерий при запасе 10/5', 'А · сохранить условия', 'Б · заменить рейс'], [
-    ['Награда по M01', 100, 160],
-    ['Награда за партию', 190, 160],
-    ['Число рейсов', 2, 1],
-    ['Сложность реализации', 'Запуск по снимку', 'Замена в одной транзакции'],
-    ['Результат по цели', single ? 'Условие 150 по M01 не выполнено' : 'Лучший результат',
-      single ? 'Условие 150 по M01 выполнено' : 'Меньше 190']
-  ]) + '<p>' + (single
-    ? 'Условие меняет допустимость. Ветвь Б подходит при физическом запасе от 7 топлива и 3 пайков.'
-    : 'После старой M01 остаётся 4/3 для M03. При цели максимизировать награду за партию выгодна ветвь А.') + '</p>';
+  const stage = LearningCase.stages[7];
+  const [matrix, decision] = stage.sheets;
+  const number = new Intl.NumberFormat('ru', { maximumFractionDigits: 2 });
+  const total = column => number.format(stage.examples.matrix.reduce((sum, row) => sum + row[1] * row[column][0] / 100, 0));
+  return '<p>Шкала сравнения: 5 получает лучший вариант по критерию, 3 — второй, 4 — оба при равенстве. ' +
+    'Для цели С4 самый большой вес у награды за партию. Награда по M01 помогает сравнить варианты при смене цели. ' +
+    'Остаток и сложность получают меньшие веса как дополнительные критерии.</p>' +
+    worksheetReference(matrix, worksheetExampleRows(stage, matrix)) +
+    '<p>Взвешенный итог для С4: А — ' + total(2) + ', Б — ' + total(3) + '. ' +
+    (objective !== 'total' ? 'Для С5 порог 150 кредитов по M01 проверяется до сравнения баллов. Ветвь А даёт 100 и исключается.' :
+      'При запасе 10/5 обе ветви допустимы, более высокий балл у А.') + '</p>' +
+    worksheetReference(decision, worksheetExampleRows(stage, decision, objective));
 }

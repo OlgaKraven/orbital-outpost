@@ -11,7 +11,17 @@ const fixtures = JSON.parse(fixtureText);
 const context = createContext({});
 context.window = context;
 runInContext([courseSource, caseSource, references, studySource].join('\n'), context);
-const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference } = context;
+const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference, worksheetExampleRows, e01Reference } = context;
+
+for (const [index, stage] of LearningCase.stages.entries()) {
+  for (const sheet of stage.sheets) {
+    const rows = worksheetExampleRows(stage, sheet, stage.singleGoal ? 'both' : 'total');
+    if (!rows || rows.length < sheet.min || rows.some(row =>
+      row.length !== sheet.columns.length || row.some(value => typeof value !== 'string' || !value.trim()))) {
+      throw new Error('ЛР0' + (index + 1) + ' · «' + sheet.name + '». Эталон должен заполнить все поля и минимальное число строк рабочего листа.');
+    }
+  }
+}
 
 const studentLinks = [['student-guide.html', 'Задание'], ['launch.html', 'Первый API · E01'], ['brief.html', 'Досье'],
   ['primer.html', 'Вводный тренажёр'], ['workbook.html', 'Рабочие листы']];
@@ -109,12 +119,8 @@ const reference = document('Эталоны ЛР01–ЛР08', 'Показ пре�
     'В «Сценариях» выбрать «Не хватает пайков». Нажать «Проверить замену» и открыть журнал. Сверить HTTP-ответ и резерв до и после.',
     'На станции 7 показать трассу R23 от источника С3 до теста 409. Затем сравнить запросы эталона и прототипа студента.'
   ]) + outcomeTable) +
-  section('e01', 'Эталон первого API · E01', firstValues +
-    table(['Прогон', 'HTTP', 'Состояние', 'Склад', 'История'], [
-      ['Первый launch', 200, 'inFlight', '4/3', 'prepared, inFlight'],
-      ['Повтор launch', 409, 'inFlight', '4/3', 'prepared, inFlight'],
-      ['Перенос: каталог 8/4', '200, затем 409', 'inFlight', '4/3', 'prepared, inFlight']
-    ]) + '<p>При результате 3/2 был использован каталог 7/3. При результате 2/1 после переноса был использован каталог 8/4. В готовом проекте эталон первого API находится в source/launch-reference.</p>') +
+  section('e01', 'Эталон первого API · E01', e01Reference() +
+    '<p>Остаток 3/2 показывает списание по каталогу 7/3, а остаток 2/1 при переносе — списание по 8/4. В эталонном проекте <code>launch-reference</code> используется согласованная стоимость 6/2.</p>') +
   Course.stages.map((stage, index) =>
   section('lab-' + (index + 1), 'ЛР0' + (index + 1) + '. ' + stage.name,
     caseStageReference(index) +
@@ -230,7 +236,7 @@ const workbook = document('Рабочие листы ЛР01–ЛР08', 'Пуст
   LearningCase.stages.map((stage, index) => section('lab-' + (index + 1), 'ЛР0' + (index + 1) + '. ' + Course.stages[index].name,
     '<p>' + esc(stage.task) + '</p>' + stage.sheets.map(sheet =>
       '<h3>' + esc(sheet.name) + '</h3>' + table(sheet.columns, Array.from({ length: sheet.min }, () => sheet.columns.map(() => '\u00a0')))
-    ).join('') + '<p>Прогноз / обоснование / замечание после сверки __________________________________________</p>'
+    ).join('') + (index === 0 ? '' : '<p>Прогноз / обоснование / замечание после сверки __________________________________________</p>')
   )).join(''), true);
 
 const launch = document('Первый прототип API · Рейс E01', 'Практика для первого знакомства с Minimal API и JSON.', [
@@ -244,7 +250,7 @@ const launch = document('Первый прототип API · Рейс E01', 'П
     code('var hatchOpen = false;\napp.MapPost("/example/hatch", (LaunchRequest request) =>\n{\n    if (request.Action != "open")\n        return Results.BadRequest(new { error = "invalid_action" });\n    if (hatchOpen)\n        return Results.Conflict(new { error = "already_open" });\n\n    hatchOpen = true;\n    return Results.Ok(new { hatchOpen });\n});') + stepList([
       'Принять LaunchRequest. Если action отличается от launch, вернуть 400.',
       'Проверить статус prepared. При другом статусе вернуть 409 до изменения состояния.',
-      'Рассчитать остаток каждого ресурса и присвоить stock новый Resources. Обосновать выбор между agreedCost и currentCost.',
+      'Выбрать источник стоимости между agreedCost и currentCost. Записать причину выбора в протоколе. Рассчитать остаток каждого ресурса и присвоить stock новый Resources.',
       'Присвоить статус inFlight, добавить его в history, вернуть 200 с полями status и stock.'
     ]) + '<p><strong>Проверка сборки.</strong> Запустить dotnet run. При ошибке открыть первую строку с именем Program.cs и номером строки. Сверить скобки обработчика и расположение кода перед app.Run().</p>'),
   section('verify', '4. Проверить двумя запросами', '<p>В файле <code>requests.http</code> выполнить GET и два одинаковых POST подряд. Между запросами сервер продолжает работать. При отсутствии поддержки .http выполнить блок PowerShell ниже дважды.</p>' +
@@ -265,8 +271,9 @@ try {
 Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 6`) +
     '<p>Для каждого запроса записать HTTP-код, статус рейса, запас и историю. Для автоматической проверки свежего запуска можно выполнить <code>./Check-E01.ps1</code> из папки <code>first-api</code>. Затем остановить сервер и запустить с новыми текущими условиями.</p>' +
     code('dotnet run --no-launch-profile --urls http://localhost:5201 --LaunchTransfer true') +
-    '<p>Проверить через GET, что каталог стал 8/4. Предсказать результат запуска и его повтора. Сдать папку <code>first-api</code> и протокол обоих наборов. Объяснить, из какого объекта обработчик берёт стоимость.</p>'),
-  section('next', '5. Перейти к проекту по карте', '<p>На станции 6 перенести идею снимка в модель SQLite, на станции 7 — свои проверки в протокол API. В тренажёре открыть «Сценарии» и выбрать «Перенос E01». У рейса будет выданный сервером UUID. В минимальной практике его роль выполняет постоянный код E01.</p>')
+    '<p>Проверить через GET, что каталог стал 8/4. Предсказать результат запуска и его повтора. Сдать папку <code>first-api</code> и протокол обоих наборов.</p>'),
+  section('reference', '5. Сверить результат', '<details><summary>Открыть эталон E01 после проверки</summary>' + e01Reference() + '</details>'),
+  section('next', '6. Перейти к проекту по карте', '<p>На станции 6 перенести идею снимка в модель SQLite, на станции 7 — свои проверки в протокол API. В тренажёре открыть «Сценарии» и выбрать «Перенос E01». У рейса будет выданный сервером UUID. В минимальной практике его роль выполняет постоянный код E01.</p>')
 ].join(''), true);
 
 const studentGuide = document('Задание на разработку прототипа API', 'Самостоятельная работа по карте «Орбитального форпоста».', [

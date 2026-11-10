@@ -123,13 +123,8 @@ function simDossier() {
 }
 
 function simReference() {
-  const answers = [
-    ['Первый запуск E01', '200', 'В полёте · остаток 4/3 · два события'],
-    ['Повтор запуска E01', '409', 'Статус, остаток 4/3 и история сохранены'],
-    ['Каталог 8/4', '200, затем 409', 'Списание по снимку 6/2. Остаток 4/3']
-  ];
   return simPanel('Сверка результата', 'Эталон E01 и учебных сценариев',
-    table(['Проверка', 'HTTP', 'Что увидеть в состоянии'], answers) +
+    e01Reference() +
     '<h3>Проект с SQLite</h3>' + table(['Проверка', 'Условие', 'Ожидаемый результат'], LearningCase.outcomes) +
     '<p>Чтобы сверить рабочий лист, откройте свою станцию и выберите «Свериться с эталоном».</p>',
     simReturn(), '<a class="sim-text-link" href="#map">Карта ЛР01–ЛР08</a>');
@@ -441,12 +436,12 @@ function simBuild(step) {
       '<p>Во втором терминале выполните команду ниже. Ищите статус <code>prepared</code> и три разные записи о ресурсах. В заготовке чтение уже работает.</p>' +
       simCode('Invoke-RestMethod http://localhost:5201/api/game | ConvertTo-Json -Depth 5')],
     ['Добавьте команду запуска',
-      '<p>Остановите сервер через Ctrl+C. В <code>Program.cs</code> перед <code>app.Run()</code> добавьте <code>MapPost</code>. Параметр <code>LaunchRequest</code> принимает JSON из тела запроса.</p>' +
+      '<p>Остановите сервер через Ctrl+C. Добавьте этот обработчик перед <code>app.Run()</code> в <code>Program.cs</code>. Параметр <code>LaunchRequest</code> принимает JSON из тела запроса.</p>' +
+      simCode('app.MapPost("/api/expeditions/E01/transitions", (LaunchRequest request) =>\n{\n    // Проверки, списание и ответ\n});') +
       '<ol class="steps"><li>Если <code>request.Action</code> отличается от <code>launch</code>, верните <code>Results.BadRequest()</code>.</li>' +
       '<li>Если статус отличается от <code>prepared</code>, верните <code>Results.Conflict()</code> до записи.</li>' +
-      '<li>Вычтите из <code>stock.Fuel</code> и <code>stock.Rations</code> значения выбранного источника. Создайте новый <code>Resources</code> и присвойте его <code>stock</code>.</li>' +
+      '<li>Выберите источник стоимости между <code>agreedCost</code> и <code>currentCost</code>. В протоколе одной фразой объясните выбор. Вычтите эти значения из запаса и запишите результат в <code>stock</code>.</li>' +
       '<li>Установите <code>inFlight</code>, добавьте статус в <code>history</code> и верните <code>Results.Ok(new { status, stock })</code>.</li></ol>' +
-      simCode('app.MapPost("/api/expeditions/E01/transitions", (LaunchRequest request) =>\n{\n    // Проверки, списание и ответ\n});') +
       '<p>Если сборка не проходит, начните с первой строки ошибки в <code>Program.cs</code>. Объявления <code>record</code> должны быть после <code>app.Run()</code>.</p>'],
     ['Проверьте свой обработчик',
       '<p>Запустите сервер той же командой. В другом PowerShell из папки <code>first-api</code> выполните проверку. Она читает входные данные, отправляет первый и повторный запуск и сверяет состояние.</p>' +
@@ -454,7 +449,7 @@ function simBuild(step) {
       '<p>Ручной вариант есть в <code>requests.http</code>. Выполните GET, затем два одинаковых POST и ещё один GET. Между POST оставьте сервер запущенным.</p>' +
       '<p>Если первый ответ 404, проверьте адрес <code>/api/expeditions/E01/transitions</code>. Если второй POST меняет запас, перенесите проверку статуса перед списанием.</p>' +
       '<label class="sim-prediction" for="sim-api-check"><strong>Результат моего API</strong>' +
-      '<span>Запишите два HTTP-кода и остаток после каждой команды.</span><textarea id="sim-api-check" rows="2" maxlength="2000">' +
+      '<span>Запишите два HTTP-кода, статус, остаток и историю после каждой команды. Добавьте своё объяснение выбора источника.</span><textarea id="sim-api-check" rows="2" maxlength="2000">' +
       esc(simNotebook.studentApiNote ?? '') + '</textarea></label>'],
     ['Перенесите проверку на каталог 8/4',
       '<p>Остановите сервер и запустите его с изменённым каталогом. Через GET проверьте, что <code>currentCost</code> стал 8/4, а <code>agreedCost</code> остался прежним. Запишите прогноз до запуска.</p>' +

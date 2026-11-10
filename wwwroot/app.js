@@ -139,6 +139,13 @@ function renderQuest() {
     ? '<p class="note">В E01 редактор менял каталог, а диспетчер запускал рейс. Теперь определите, кто принимает решения в новом проекте. <a href="#simulator-project">Как это связано с E01</a></p>'
     : '<p class="note">Опора предыдущей станции · <a href="#station-' + (number - 1) +
       '">' + esc(Course.stages[selectedStation - 1].name) + '</a></p>';
+  const animation = number === 1 ? '' :
+    '<details class="station-explanation"><summary>Показать схему по шагам</summary><div data-station-animation></div></details>';
+  const draft = number > 1 || drafts[selectedStation]?.trim() ?
+    '<details class="station-explanation station-draft"><summary>' +
+    (number === 1 ? 'Моя заметка' : 'Добавить пояснение к своему решению') + '</summary>' +
+    '<label class="draft-label" for="draft">Мой черновик</label><textarea id="draft" maxlength="12000" rows="3">' +
+    esc(drafts[selectedStation] ?? '') + '</textarea></details>' : '';
   main.innerHTML = '<article class="panel station-workspace"><p class="kicker">Станция ' + number + ' из 8 · ' + esc(stage.station) +
     '</p><h1>' + esc(stage.name) + '</h1><p>' + esc(stage.goal) + '</p>' +
     '<section class="station-section"><h2>1. Изучите условие</h2>' + context +
@@ -146,14 +153,11 @@ function renderQuest() {
     esc(caseStage.source) + ' · <a href="#simulator-dossier">Открыть досье</a></p>' +
     '<p><strong>Приём.</strong> ' + esc(caseStage.lesson) + '</p>' +
     '<p class="example"><strong>Разобранный пример.</strong> ' + esc(caseStage.example) + '</p>' +
-    '<details class="station-explanation"><summary>Показать схему по шагам</summary><div data-station-animation></div></details></section>' +
+    animation + '</section>' +
     '<section class="station-section" id="worksheets"><h2>2. Запишите решение</h2><p>' + esc(caseStage.task) + '</p>' +
     '<p><strong>Зачем.</strong> ' + esc(caseStage.why) + '</p>' +
     '<p class="note">Рабочие листы сохраняются в этом браузере. Сравните обоснование с эталоном после проверки.</p>' +
-    studyWorksheet(selectedStation, saved) +
-    '<details class="station-explanation station-draft"><summary>Добавить пояснение к своему решению</summary>' +
-    '<label class="draft-label" for="draft">Мой черновик</label><textarea id="draft" maxlength="12000" rows="3">' +
-    esc(drafts[selectedStation] ?? '') + '</textarea></details></section>' +
+    studyWorksheet(selectedStation, saved) + draft + '</section>' +
     '<section class="station-section" aria-labelledby="challenge-title"><h2 id="challenge-title">3. Проверьте себя</h2>' +
     '<div id="station-progress"></div>' + caseStage.quiz.map(challengeMarkup).join('') +
     '<p class="note">' + esc(caseStage.next) + '</p>' +
@@ -161,11 +165,12 @@ function renderQuest() {
     '<a class="button primary" id="next-station" href="' + (number === 8 ? '#simulator-scenarios' : '#station-' + (number + 1)) +
     '">' + (number === 8 ? 'К проверкам проекта' : 'Следующая станция') + '</a>' +
     '<button class="text-button" data-export-study>Скачать мои решения</button></div></section></article>';
-  const explanation = main.querySelector('.station-explanation');
-  explanation.addEventListener('toggle', () => {
+  const animationHost = main.querySelector('[data-station-animation]');
+  const explanation = animationHost?.parentElement;
+  explanation?.addEventListener('toggle', () => {
     if (!explanation.isConnected) return;
     leavePrimer?.();
-    leavePrimer = explanation.open ? mountPrimer(explanation.querySelector('[data-station-animation]'), topic - 1, true) : undefined;
+    leavePrimer = explanation.open ? mountPrimer(animationHost, topic - 1, true) : undefined;
   });
   updateStationProgress();
 }
@@ -211,12 +216,14 @@ function renderReference() {
   const stage = Course.stages[selectedStation];
   const number = selectedStation + 1;
   const draft = drafts[selectedStation]?.trim();
+  const worksheetsReview = studyReview(selectedStation, worksheets[selectedStation] ?? {});
   main.innerHTML = '<article class="panel reference"><p class="kicker">Эталон станции ' + number + '</p><h2>' + esc(stage.name) +
     '</h2><p>Сравните свои данные, причинное обоснование и способ проверки с эталоном.</p><div class="actions"><a class="button" href="#station-' + number +
     '">Вернуться к испытанию</a></div>' +
     (draft ? '<div class="brief"><strong>Мой черновик решения</strong><p class="draft-preview">' +
       esc(draft) + '</p></div>' : '') +
-    studyReview(selectedStation, worksheets[selectedStation] ?? {}) + caseStageReference(selectedStation, true) +
+    (worksheetsReview ? '<section aria-label="Ваши записи"><h3>Ваши записи</h3>' + worksheetsReview + '</section>' : '') +
+    caseStageReference(selectedStation, true) +
     '<h3>Ответы на испытания</h3>' + stepList(LearningCase.stages[selectedStation].quiz.map(task =>
       (task.choices?.[task.answer] ?? task.answer) + '. ' + task.reason)) + '</article>';
 }

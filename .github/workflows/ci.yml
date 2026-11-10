@@ -27,6 +27,11 @@ jobs:
         with:
           node-version: 24
 
+      - name: Verify worksheets and examples
+        run: |
+          node tools/build-docs.mjs
+          git diff --exit-code -- wwwroot
+
       - name: Publish simulator
         run: dotnet publish OrbitalOutpost.csproj -c Release -o "$RUNNER_TEMP/orbital-outpost"
 
