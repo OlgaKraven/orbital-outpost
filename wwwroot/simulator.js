@@ -75,6 +75,7 @@ function renderSimulator() {
   else if (screen === 'data') body = simData(localFile);
   else if (screen === 'materials') body = simMaterials();
   else if (screen === 'dossier') body = simDossier();
+  else if (screen === 'api') body = simPanel('Работа с API', 'Проверьте источники данных на сервере', apiSourceGuide(), simReturn());
   else if (screen === 'reference') body = simReference();
   else if (screen === 'project') body = simProjectBridge();
   else if (localFile) body = simPanel('Тренажёр E01', 'Подготовьтесь к рейсу',
@@ -111,7 +112,7 @@ function simMaterials() {
   return simPanel('Учебные материалы', 'Один комплект для практики',
     '<p>В архиве — данные, рабочие листы, заготовки C# и проверка E01. Объяснения и эталон доступны в этом тренажёре.</p>',
     '<a class="button primary" href="student-kit.zip" download>Скачать комплект студента</a>',
-    simLink('Досье и данные', 'dossier') + simLink('Эталон проверки', 'reference') +
+    simLink('Досье и данные', 'dossier') + simLink('Эталон проверки', 'reference') + simLink('Запросы к серверу', 'api') +
       '<a class="sim-text-link" href="' + esc(lastMainRoute) + '">Вернуться к шагу</a>');
 }
 
@@ -125,7 +126,8 @@ function simDossier() {
     '<section><h3>Исходный бриф · Б1–Б5</h3>' + documents(Course.sources) + '</section>' +
     '<section><h3>Донесение · С1–С6</h3>' + documents(LearningCase.documents) + '</section>' +
     '<h3>Исходный каталог</h3>' + table(['Код', 'Миссия', 'Топливо', 'Пайки', 'Награда'], Course.missions) +
-    '<p>В задании E01 условия текущего каталога меняются с 7/3 на 8/4. Подготовленный рейс хранит снимок 6/2.</p>',
+    '<p>В задании E01 условия текущего каталога меняются с 7/3 на 8/4. Подготовленный рейс хранит снимок 6/2.</p>' +
+    '<p><a href="seed.json">Исходный каталог JSON</a> · <a href="scenarios.json">Наборы сценариев JSON</a> · ' + simLink('Проверить данные через API', 'api') + '</p>',
     '', simLink('Материалы', 'materials'));
 }
 
@@ -156,6 +158,9 @@ function simData(localFile) {
     table(['Запись', 'Топливо', 'Пайки'], [
       ['Физический запас', 10, 5], ['Согласованные условия E01', 6, 2], ['Текущая карточка M01', 7, 3]
     ]) +
+    '<p>' + sourceLinks('С1') + ' даёт склад 10/5 и снимок 6/2, ' + sourceLinks('С2') + ' — новую карточку 7/3. ' +
+    'В <code>first-api/Program.cs</code> им соответствуют <code>stock</code>, <code>agreedCost</code> и <code>currentCost</code>. ' +
+    'Полная версия создаёт эти записи из <a href="seed.json">исходного каталога</a> и <a href="scenarios.json">сценариев</a>.</p>' +
     simPrediction('sim-prediction', 'Запишите источник списания, ожидаемый остаток и что произойдёт при повторе.', simNotebook.prediction),
     localFile ? simLink('Перейти к инструкции по C#', 'build', true) : simButton('Открыть рейс E01', 'new', 'e01'),
     simLink('К объяснению запроса', 'learn'));
@@ -282,7 +287,9 @@ function simE01(game) {
       (gameSession.busy ? ' disabled' : '') + '>Запустить рейс</button>' + simLink('К объяснению запроса', 'learn') + '</div></form>';
     panel = simPanel(label, 'Предскажите, что спишет сервер',
       simText('Штаб обновил M01, когда рейс уже был подготовлен. В таблице показаны три записи, которые видит диспетчер.') +
-      simTripFacts(game, trip, mission) + prompt);
+      simTripFacts(game, trip, mission) + '<p class="note">Склад и согласованные условия — ' + sourceLinks('С1') +
+      '. Текущая карточка — ' + (transfer ? '<a href="scenarios.json">scenarios.json</a>, набор <code>launch-transfer</code>, поле <code>catalogCost</code>' : sourceLinks('С2')) +
+      '. <a href="#simulator-build">Поля собственного API E01</a></p>' + prompt);
   } else if (step === 1) {
     const result = recorded?.firstLaunch?.spent;
     const explanation = result ? '<p class="sim-observation"><strong>Списание (топливо / пайки) — ' + simPair(result) +

@@ -5,7 +5,73 @@
     "version": "1.0.0",
     "description": "Локальный учебный контракт. X-Game-Id выбирает партию, полученную через POST /api/demo/games."
   },
+  "servers": [{ "url": "http://127.0.0.1:5191", "description": "Локальный сервер эталона" }],
   "paths": {
+    "/study/fixtures": {
+      "get": {
+        "summary": "Прочитать исходные данные и сценарии",
+        "description": "Запрос доступен до создания партии. seed содержит исходный каталог и свободный запас. scenarios содержит revision и сценарии, из которых сервер создаёт партии.",
+        "responses": {
+          "200": {
+            "description": "Содержимое учебных наборов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["seed", "scenarios"],
+                  "properties": {
+                    "seed": {
+                      "type": "object",
+                      "required": ["fuel", "rations", "missions"],
+                      "properties": {
+                        "fuel": { "type": "integer", "minimum": 0 },
+                        "rations": { "type": "integer", "minimum": 0 },
+                        "missions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["id", "title", "rewardCredits", "cost"],
+                            "properties": {
+                              "id": { "type": "string" },
+                              "title": { "type": "string" },
+                              "rewardCredits": { "type": "integer", "minimum": 0 },
+                              "cost": { "$ref": "#/components/schemas/Quantities" },
+                              "revision": { "type": "integer", "minimum": 1, "default": 1 }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "scenarios": {
+                      "type": "object",
+                      "required": ["revision", "scenarios"],
+                      "properties": {
+                        "revision": { "$ref": "#/components/schemas/Mission" },
+                        "scenarios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["id", "title", "stock", "applyRevision"],
+                            "properties": {
+                              "id": { "type": "string" },
+                              "title": { "type": "string" },
+                              "stock": { "$ref": "#/components/schemas/Quantities" },
+                              "prepareMissionId": { "type": ["string", "null"] },
+                              "applyRevision": { "type": "boolean" },
+                              "catalogCost": { "anyOf": [{ "$ref": "#/components/schemas/Quantities" }, { "type": "null" }] }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demo/games": {
       "post": {
         "summary": "Начать отдельную партию",
@@ -47,7 +113,8 @@
     },
     "/api/demo/catalog-revision": {
       "post": {
-        "summary": "Изменить условия M01 в каталоге выбранной партии",
+        "summary": "Опубликовать учебную редакцию M01",
+        "description": "Повтор возвращает текущую карточку. Условия уже принятой редакции, в том числе 8/4 сценария переноса, сохраняются.",
         "parameters": [
           {
             "$ref": "#/components/parameters/GameId"

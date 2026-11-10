@@ -27,7 +27,7 @@ let view = 'quest';
 let leavePrimer;
 let lastMainRoute = readLocal('outpost-main-route', '#simulator-learn', 'sessionStorage');
 
-const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|build(?:-[1-4])?))?$/;
+const simulatorRoute = /^#simulator(?:-(?:learn|data|scenarios|journal|compare|catalog|actions|materials|dossier(?:-(?:b[1-5]|c[1-6]))?|reference|project|api|build(?:-[1-4])?))?$/;
 const mainRoute = /^#(?:map|(?:station|reference|worksheet)-[1-8]|simulator(?:-(?:learn|data|project|build(?:-[1-4])?))?)$/;
 const stationRoute = /^#(station|reference|worksheet)-([1-8])$/;
 if (!mainRoute.test(lastMainRoute)) lastMainRoute = '#simulator-learn';
@@ -71,7 +71,7 @@ function paintNavigation() {
     '<a class="' + (done ? 'done' : '') + '" href="#station-' + number + '"' + (active ? ' aria-current="step"' : '') +
     '><span class="number">' + number + '</span><span>' + label + (done ? '<span class="done-mark" aria-label=" пройдена"> ✓</span>' : '') + '</span></a>').join('');
   document.querySelectorAll('[data-area]').forEach(link => {
-    const currentArea = view === 'sim' && ['materials','reference','dossier'].includes(simulatorScreen()) ? 'materials' :
+    const currentArea = view === 'sim' && ['materials','reference','dossier','api'].includes(simulatorScreen()) ? 'materials' :
       view === 'reference' ? 'quest' : view;
     const current = link.dataset.area === currentArea;
     if (current) link.setAttribute('aria-current', 'page');
@@ -147,12 +147,12 @@ function renderQuest() {
   const caseStage = LearningCase.stages[selectedStation];
   const saved = worksheets[selectedStation] ?? {};
   const number = selectedStation + 1;
-  const topic = [1,2,2,4,6,5,7,7][selectedStation];
+  const topic = { 4: 4, 5: 6, 6: 5, 7: 7 }[number];
   const context = number === 1
     ? '<p class="note">В E01 редактор менял каталог, а диспетчер запускал рейс. Теперь определите, кто принимает решения в новом проекте. <a href="#simulator-project">Как это связано с E01</a></p>'
     : '<p class="note">Опора предыдущей станции · <a href="#station-' + (number - 1) +
       '">' + esc(Course.stages[selectedStation - 1].name) + '</a></p>';
-  const animation = number === 1 ? '' :
+  const animation = !topic ? '' :
     '<details class="station-explanation"><summary>Показать схему по шагам</summary><div data-station-animation></div></details>';
   const draft = number > 1 || drafts[selectedStation]?.trim() ?
     '<details class="station-explanation station-draft"><summary>' +
@@ -353,8 +353,10 @@ async function gameAction(action, value) {
     const before = simObservation();
     const beforeStock = gameSession.game.inventory.onHand;
     try {
-      await request('POST', path, data);
+      const result = await request('POST', path, data);
       await refreshGame();
+      if (action === 'revise') return 'Каталог M01 · редакция ' + result.revision + ' · ' + simPair(result.cost) +
+        ' · ' + result.rewardCredits + ' кредитов. Сравните со снимком рейса.';
       if (action === 'retry') return 'Повтор неожиданно выполнен. Сравните ответы и состояние в журнале.';
       if (action === 'transition' && value === 'launch' && simIsE01(gameSession.game)) {
         rememberSimEvidence('firstLaunch', beforeStock);
@@ -376,8 +378,7 @@ async function gameAction(action, value) {
       }
       throw error;
     }
-  }, action === 'revise' ? 'Каталог M01 обновлён до 7/3 и 160. Сравните со снимком рейса.' :
-    action === 'prepare' ? 'Экспедиция подготовлена.' :
+  }, action === 'prepare' ? 'Экспедиция подготовлена.' :
       action === 'replace' ? 'Старый рейс отменён, новый резерв создан. Сверьте связь в карточке.' : 'Состояние рейса обновлено.');
 }
 

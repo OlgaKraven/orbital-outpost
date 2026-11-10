@@ -11,10 +11,16 @@ const fixtures = JSON.parse(fixtureText);
 const context = createContext({});
 context.window = context;
 runInContext([courseSource, caseSource, references, studySource].join('\n'), context);
-const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference, worksheetExampleRows, e01Reference, lab07HttpGuide } = context;
+const { Course, LearningCase, esc, table, stepList, stateDiagram, referenceContent, caseStageReference, worksheetExampleRows,
+  e01Reference, lab07HttpGuide, apiSourceGuide, sourceAnchor, sourceLinks, workedExample } = context;
 
+const sourceIds = new Set([...Course.sources, ...LearningCase.documents].map(([id]) => id));
 for (const [index, stage] of LearningCase.stages.entries()) {
   for (const sheet of stage.sheets) {
+    const worked = LearningCase.worked[sheet.id];
+    if (!worked?.[0].length || worked[0].some(id => !sourceIds.has(id))) {
+      throw new Error('Проверьте разбор первой строки и его ссылки для листа «' + sheet.name + '».');
+    }
     const rows = worksheetExampleRows(stage, sheet, stage.singleGoal ? 'both' : 'total');
     if (!rows || rows.length < sheet.min || rows.some(row =>
       row.length !== sheet.columns.length || row.some(value => typeof value !== 'string' || !value.trim()))) {
@@ -46,8 +52,9 @@ function code(text) {
 }
 
 const missionTable = table(['ID', 'Миссия', 'Топливо, ед.', 'Пайки, шт.', 'Награда, кр.'], Course.missions);
-const sources = table(['ID', 'Фрагмент', 'Постановка'], Course.sources);
 const dossier = table(['ID', 'Источник', 'Данные'], LearningCase.documents);
+const documentSources = rows => rows.map(([id, title, text]) =>
+  '<article class="dossier-source" id="source-' + sourceAnchor(id) + '"><h3>' + esc(id + ' · ' + title) + '</h3><p>' + esc(text) + '</p></article>').join('');
 const revision = fixtures.revision;
 const revisionTable = table(['Редакция M01', 'Топливо, ед.', 'Пайки, шт.', 'Награда, кр.'], [
   [1, ...Course.missions[0].slice(2)], [revision.revision, revision.cost.fuel, revision.cost.rations, revision.rewardCredits]
@@ -66,12 +73,12 @@ const links = '<p><a href="https://github.com/OlgaKraven/2026-PIDIS-lab/tree/mai
   '<a href="https://github.com/OlgaKraven/2026-PIDIS-lab/blob/main/inputs/course-3/wms-case.md">Учебный кейс WMS «Маршрут»</a></p>';
 
 const brief = document('Досье «Донесение с орбиты»', 'Исходные сведения для принятия проектного решения.', [
-  section('brief', '1. Входящие документы', '<p>Экспедиция M01 уже подготовлена, когда поступает новая редакция задания. Определить, при каких условиях выполнить существующий рейс и при каких подтвердить его замену.</p>' + dossier),
+  section('brief', '1. Входящие документы', '<p>Экспедиция M01 уже подготовлена, когда поступает новая редакция задания. Определить, при каких условиях выполнить существующий рейс и при каких подтвердить его замену.</p>' + documentSources(LearningCase.documents)),
   section('reference-data', '2. Справочные данные', '<p>Топливо измеряется в условных единицах, пайки — в штуках, награда — в кредитах. Исходный каталог:</p>' + missionTable +
     '<h3>Карточка обновления M01</h3>' + revisionTable +
     '<h3>Наборы для повторной проверки</h3><p>Каждая строка задаёт физический запас. M01 подготовлена по редакции 1, а каталог показывает новую редакцию. В наборе переноса текущая стоимость равна 8/4.</p>' + scenarioTable +
     '<p><a href="scenarios.json" download>Скачать исходные наборы JSON</a> · <a href="seed.json" download>Скачать исходный каталог JSON</a></p>'),
-  section('base', '3. Исходный бриф', sources),
+  section('base', '3. Исходный бриф', documentSources(Course.sources)),
   section('glossary', '4. Понятия для работы', table(['Термин', 'Что означает в задаче'], LearningCase.glossary))
 ].join(''), true);
 
@@ -161,7 +168,7 @@ const guide = document('Пошаговый разбор проекта', 'От �
     const task = LearningCase.stages[index];
     return (
     '<h3 id="step-' + (index + 1) + '">4.' + (index + 1) + '. ' + esc(stage.name) + '</h3>' +
-    '<p><strong>Вход.</strong> ' + esc(task.source) + ' · ' + esc(task.brief) + '</p>' +
+    '<p><strong>Вход.</strong> ' + sourceLinks(task.source, 'brief.html#source-') + ' · ' + esc(task.brief) + '</p>' +
     '<p><strong>Приём.</strong> ' + esc(task.lesson) + '</p><p><strong>Пример.</strong> ' + esc(task.example) + '</p>' +
     '<p><strong>Действие.</strong> ' + esc(task.task) + '</p><p><strong>Зачем.</strong> ' + esc(task.why) +
     '</p><p><strong>Следующий шаг.</strong> ' + esc(task.next) +
@@ -235,7 +242,8 @@ Invoke-RestMethod -Uri "$base/game" -Headers $headers | ConvertTo-Json -Depth 8
 const workbook = document('Рабочие листы ЛР01–ЛР08', 'Пустые таблицы для работы по карте. Печатная версия дополняет формы квеста.',
   LearningCase.stages.map((stage, index) => section('lab-' + (index + 1), 'ЛР0' + (index + 1) + '. ' + Course.stages[index].name,
     '<p>' + esc(stage.task) + '</p>' + stage.sheets.map(sheet =>
-      '<h3>' + esc(sheet.name) + '</h3>' + table(sheet.columns, Array.from({ length: sheet.min }, () => sheet.columns.map(() => '\u00a0')))
+      '<h3>' + esc(sheet.name) + '</h3>' + workedExample(stage, sheet, { row: true, interactive: false }) +
+      table(sheet.columns, Array.from({ length: sheet.min }, () => sheet.columns.map(() => '\u00a0')))
     ).join('') + (index === 0 ? '' : '<p>Прогноз / обоснование / замечание после сверки __________________________________________</p>')
   )).join(''), true);
 
@@ -290,7 +298,7 @@ const studentGuide = document('Задание на разработку прот
     '<a class="button" href="#station-' + (index + 1) + '">' + (index + 1) + '. ' + esc(stage.station) + '</a>').join('') +
     '</nav>' + LearningCase.stages.map((stage, index) =>
     '<h3 id="station-' + (index + 1) + '">ЛР0' + (index + 1) + '. ' + esc(Course.stages[index].name) + '</h3><p>' + esc(stage.task) +
-    '</p><p><strong>Опора.</strong> ' + esc(stage.source) + '.</p><p><strong>Приём.</strong> ' + esc(stage.lesson) +
+    '</p><p><strong>Опора.</strong> ' + sourceLinks(stage.source, 'brief.html#source-') + '.</p><p><strong>Приём.</strong> ' + esc(stage.lesson) +
     '</p><p><strong>Зачем.</strong> ' + esc(stage.why) + '</p><p>' + esc(stage.next) + '</p>' + (index === 6 ? lab07HttpGuide() : '')
   ).join('')),
   section('api', '4. Расширить API для нескольких рейсов', stepList([
@@ -302,7 +310,8 @@ const studentGuide = document('Задание на разработку прот
     'В requests.http подставить ID партии из ответа её создания и ID рейса из activeExpedition.id. Прогнать запросы на своей сборке. Для проверки 409 выполнить GET до и после команды и сравнить состояние.'
   ]) + code('dotnet restore\ndotnet run --urls http://127.0.0.1:5201') +
     '<p>Если редактор не умеет выполнять .http, отправить запросы через PowerShell с Invoke-RestMethod. Пример находится в README.md рядом с проектом. Проверить наличие .NET SDK 10 командой dotnet --version.</p>'),
-  section('proof', '5. Проверить и сдать', '<p><strong>Для E01.</strong> Передать папку first-api и протокол своего API на 7/3 и 8/4. Приложить запросы, ответы и состояние после каждой команды. Отдельно объяснить выбор источника списания.</p>' +
+  section('api-practice', '5. Проверить источники данных через API', apiSourceGuide()),
+  section('proof', '6. Проверить и сдать', '<p><strong>Для E01.</strong> Передать папку first-api и протокол своего API на 7/3 и 8/4. Приложить запросы, ответы и состояние после каждой команды. Отдельно объяснить выбор источника списания.</p>' +
     '<p><strong>Для проекта с SQLite.</strong> Приложить исходники, рабочие листы, запись проектного решения и протокол. Для выбранной ветви проверить успех, границу, отказ и чтение после перезапуска.</p>')
 ].join(''), true);
 

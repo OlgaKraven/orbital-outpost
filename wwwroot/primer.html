@@ -254,8 +254,15 @@ footer { border-top: 1px solid var(--line); padding-block: 16px 27px; display: f
 .dossier-source:target { border-color: var(--mint); }
 .lab-http-guide { margin-block: 1rem; }
 .lab-http-guide summary { font-weight: 700; }
+.worked-example { border-left: 2px solid var(--line); padding: 6px 12px; margin: 0 0 14px; }
+.worked-example summary { font-weight: 700; cursor: pointer; }
+.worked-example dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 6px 12px; }
+.worked-example dt { font-weight: 700; }
+.worked-example dd { margin: 0; overflow-wrap: anywhere; }
 .mobile-cell-label { display: none; }
 @media screen and (max-width: 760px) {
+  .worked-example dl { display: block; }
+  .worked-example dd { margin-bottom: 6px; }
   .worksheet-table { overflow: visible; }
   .worksheet-table table, .worksheet-table tbody, .worksheet-table tr, .worksheet-table td { display: block; width: 100%; }
   .worksheet .worksheet-table table { min-width: 0; }

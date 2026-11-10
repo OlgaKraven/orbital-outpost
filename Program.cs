@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 var dataPath = Path.Combine(builder.Environment.ContentRootPath, "data");
 var dbPath = builder.Configuration["GameDatabase"] ?? Path.Combine(builder.Environment.ContentRootPath, "state", "outpost.db");
-var seed = JsonSerializer.Deserialize<Seed>(File.ReadAllText(Path.Combine(dataPath, "seed.json")), JsonSerializerOptions.Web)
+var seedSource = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(Path.Combine(dataPath, "seed.json")));
+var scenarioSource = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(Path.Combine(dataPath, "scenarios.json")));
+var seed = seedSource.Deserialize<Seed>(JsonSerializerOptions.Web)
     ?? throw new InvalidOperationException("Начальные данные не прочитаны.");
-var fixtures = JsonSerializer.Deserialize<CaseFixtures>(File.ReadAllText(Path.Combine(dataPath, "scenarios.json")), JsonSerializerOptions.Web)
+var fixtures = scenarioSource.Deserialize<CaseFixtures>(JsonSerializerOptions.Web)
     ?? throw new InvalidOperationException("Сценарии не прочитаны.");
 
 var store = new GameStore(dbPath, Path.Combine(dataPath, "schema.sql"), seed, fixtures);
@@ -30,26 +32,6 @@ app.Use(async (context, next) =>
             extensions: new Dictionary<string, object?> { ["code"] = fault.Code }).ExecuteAsync(context);
     }
 });
-app.Use(async (context, next) =>
-{
-    var destination = context.Request.Path.Value?.ToLowerInvariant() switch
-    {
-        "/launch.html" or "/primer.html" => "simulator-learn",
-        "/guide.html" or "/student-guide.html" => "simulator-build",
-        "/brief.html" or "/domain.html" => "simulator-dossier",
-        "/reference.html" => "simulator-reference",
-        "/materials.html" => "simulator-materials",
-        "/workbook.html" => "worksheet-1",
-        _ => null
-    };
-    if (destination is not null && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)))
-    {
-        context.Response.Headers.CacheControl = "no-store";
-        context.Response.Redirect($"{context.Request.PathBase}/#{destination}");
-        return;
-    }
-    await next(context);
-});
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -59,6 +41,8 @@ app.UseStaticFiles(new StaticFileOptions
             context.Context.Response.Headers.CacheControl = "no-cache";
     }
 });
+
+app.MapGet("/study/fixtures", () => TypedResults.Ok(new { seed = seedSource, scenarios = scenarioSource }));
 
 var api = app.MapGroup("/api");
 api.MapPost("/demo/games", (string? scenario, GameStore games) => TypedResults.Ok(games.NewGame(scenario)));

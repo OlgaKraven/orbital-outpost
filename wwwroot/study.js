@@ -6,9 +6,55 @@ function sourceAnchor(id) {
   return (id[0] === 'Б' ? 'b' : 'c') + id[1];
 }
 
-function sourceLinks(text) {
-  return esc(text).replace(/[БС][1-6](?:–[БС][1-6])?/g, id =>
-    '<a href="#simulator-dossier-' + sourceAnchor(id) + '">' + id + '</a>');
+function sourceLinks(text, prefix = '#simulator-dossier-') {
+  const documents = esc(text).replace(/([БС])([1-6])(?:–\1([1-6]))?/g, (_, letter, start, end = start) =>
+    Array.from({ length: Number(end) - Number(start) + 1 }, (_, index) => {
+      const id = letter + (Number(start) + index);
+      return '<a href="' + prefix + sourceAnchor(id) + '">' + id + '</a>';
+    }).join(', '));
+  return documents.replace(/ЛР0([1-8])/g, (label, number) =>
+    '<a href="' + (prefix.startsWith('#') ? '#reference-' : 'student-guide.html#station-') + number + '">' + label + '</a>');
+}
+
+function fixtureLinks(text) {
+  return esc(text).replace(/\b(?:seed|scenarios)\.json\b/g, name => '<a href="' + name + '">' + name + '</a>');
+}
+
+function workedExample(stage, sheet, { row = false, interactive = true, objective = 'total' } = {}) {
+  const [sources, origin, api] = LearningCase.worked[sheet.id];
+  const values = row ? worksheetExampleRows(stage, sheet, objective)[0] : [];
+  return '<details class="worked-example"><summary>Откуда данные в первой строке</summary>' +
+    '<p><strong>Документы.</strong> ' + sourceLinks(sources.join(', '), interactive ? '#simulator-dossier-' : 'brief.html#source-') + '</p>' +
+    '<p><strong>Как получить значения.</strong> ' + fixtureLinks(origin) + '</p>' +
+    (row ? '<dl>' + sheet.columns.map((column, index) => '<dt>' + esc(column) + '</dt><dd>' + esc(values[index]) + '</dd>').join('') + '</dl>' : '') +
+    '<p><strong>Проверка через API.</strong> ' + esc(api) + '</p><p><a href="' +
+    (interactive ? '#simulator-api' : 'student-guide.html#api-practice') + '">Открыть пример запроса к серверу</a></p></details>';
+}
+
+function apiSourceGuide() {
+  const commands = `$base = 'http://127.0.0.1:5191'
+$inputs = Invoke-RestMethod "$base/study/fixtures"
+$inputs.seed.missions | Where-Object id -eq 'M01' | ConvertTo-Json -Depth 5
+$inputs.scenarios.revision | ConvertTo-Json -Depth 5
+
+$party = Invoke-RestMethod -Method Post "$base/api/demo/games?scenario=briefing"
+$headers = @{ 'X-Game-Id' = $party.id }
+$tripId = $party.activeExpedition.id
+$catalog = Invoke-RestMethod "$base/api/missions" -Headers $headers
+$catalog | Where-Object id -eq 'M01' | ConvertTo-Json -Depth 5
+Invoke-RestMethod "$base/api/expeditions/$tripId" -Headers $headers | ConvertTo-Json -Depth 8
+Invoke-RestMethod "$base/api/game" -Headers $headers | ConvertTo-Json -Depth 8`;
+  return '<p>Скачайте исходники <a href="https://github.com/OlgaKraven/orbital-outpost">из репозитория</a>. ' +
+    'В каталоге с <code>OrbitalOutpost.csproj</code> запустите сервер. Команды ниже выполните в отдельном окне PowerShell.</p>' +
+    '<pre><code>dotnet run --no-launch-profile --urls http://127.0.0.1:5191</code></pre>' +
+    '<pre><code>' + esc(commands) + '</code></pre>' +
+    '<p><code>GET /study/fixtures</code> показывает исходные файлы из каталога <code>data/</code>. У M01 в <code>seed.json</code> поле <code>revision</code> отсутствует. ' +
+    'При загрузке сервер использует значение 1 из <code>MissionDto</code>. Файл <code>scenarios.json</code> задаёт редакцию 2, которую сценарий <code>briefing</code> применяет после подготовки рейса.</p>' +
+    '<p>Сопоставьте три записи. В каталоге M01 есть <code>revision: 2</code>, <code>cost: 7/3</code> и <code>rewardCredits: 160</code>. ' +
+    'Рейс хранит <code>catalogRevision: 1</code>, <code>cost: 6/2</code> и <code>rewardCreditsSnapshot: 100</code>. ' +
+    'В <code>inventory</code> физический склад 10/5, резерв 6/2, доступно 4/3. В JSON пары представлены полями <code>fuel</code> и <code>rations</code>.</p>' +
+    '<p>Для своих проверок меняйте сценарий при создании партии. Передавайте полученный <code>id</code> как <code>X-Game-Id</code>, а в пути рейса используйте <code>activeExpedition.id</code>. ' +
+    '<a href="openapi.json">Контракт OpenAPI</a></p>';
 }
 
 function lab07HttpGuide() {
@@ -62,6 +108,7 @@ function studyWorksheet(stageIndex, saved) {
       esc(row[field] ?? '') + '</textarea></td>').join('') + '</tr>').join('');
     return '<section class="worksheet" aria-labelledby="sheet-' + sheet.id + '"><h3 id="sheet-' + sheet.id + '">' +
       esc(sheet.name) + '</h3><p class="note">Заполнить от ' + sheet.min + ' строк.</p>' +
+      workedExample(stage, sheet, { row: true }) +
       '<div class="table-wrap worksheet-table"><table role="table"><thead role="rowgroup"><tr role="row">' + worksheetHeaders(sheet) + '</tr></thead><tbody role="rowgroup">' +
       cells + '</tbody></table></div><button class="button" data-add-row="' + sheet.id + '">Добавить строку</button></section>';
   }).join('');
@@ -106,13 +153,13 @@ function caseStageReference(stageIndex, interactive = false) {
   const objectives = comparison && interactive ? '<div class="actions" aria-label="Цель партии">' +
     '<button class="button" data-objective="total" aria-pressed="true">С4 · максимум за партию</button>' +
     '<button class="button" data-objective="single" aria-pressed="false">С5 · минимум 150 по M01</button></div>' : '';
-  const solution = comparison ? '<div id="matrix-live" aria-live="polite">' + caseDecision(interactive ? 'total' : 'both') + '</div>' :
-    stage.sheets.map(sheet => worksheetReference(sheet, worksheetExampleRows(stage, sheet))).join('');
+  const solution = comparison ? '<div id="matrix-live" aria-live="polite">' + caseDecision(interactive ? 'total' : 'both', interactive) + '</div>' :
+    stage.sheets.map(sheet => worksheetReference(sheet, worksheetExampleRows(stage, sheet)) + workedExample(stage, sheet, { interactive })).join('');
   return '<h3>Эталон по донесению</h3><p><strong>Задание для сверки.</strong> ' + esc(stage.task) + '</p>' +
     objectives + solution + '<p>' + esc(stage.evidence) + '</p>';
 }
 
-function caseDecision(objective) {
+function caseDecision(objective, interactive = true) {
   const stage = LearningCase.stages[7];
   const [matrix, decision] = stage.sheets;
   const number = new Intl.NumberFormat('ru', { maximumFractionDigits: 2 });
@@ -120,9 +167,9 @@ function caseDecision(objective) {
   return '<p>Шкала сравнения: 5 получает лучший вариант по критерию, 3 — второй, 4 — оба при равенстве. ' +
     'Для цели С4 самый большой вес у награды за партию. Награда по M01 помогает сравнить варианты при смене цели. ' +
     'Остаток и сложность получают меньшие веса как дополнительные критерии.</p>' +
-    worksheetReference(matrix, worksheetExampleRows(stage, matrix)) +
+    worksheetReference(matrix, worksheetExampleRows(stage, matrix)) + workedExample(stage, matrix, { interactive }) +
     '<p>Взвешенный итог для С4: А — ' + total(2) + ', Б — ' + total(3) + '. ' +
     (objective !== 'total' ? 'Для С5 порог 150 кредитов по M01 проверяется до сравнения баллов. Ветвь А даёт 100 и исключается.' :
       'При запасе 10/5 обе ветви допустимы, более высокий балл у А.') + '</p>' +
-    worksheetReference(decision, worksheetExampleRows(stage, decision, objective));
+    worksheetReference(decision, worksheetExampleRows(stage, decision, objective)) + workedExample(stage, decision, { interactive });
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -95,6 +95,26 @@ try {
     await stop();
   }
   await start();
+  for (const [path, anchor] of [['/reference.html', 'lab-7'], ['/brief.html', 'source-b1']]) {
+    const document = await fetch(baseUrl + path, { redirect: 'manual' });
+    assert.equal(document.status, 200, path);
+    assert.ok((await document.text()).includes(`id="${anchor}"`), path + '#' + anchor);
+    checks++;
+  }
+  const inputs = await fetch(baseUrl + '/study/fixtures');
+  assert.equal(inputs.status, 200);
+  assert.deepEqual(await inputs.json(), {
+    seed: JSON.parse(await readFile(join(appDirectory, 'data/seed.json'), 'utf8')),
+    scenarios: JSON.parse(await readFile(join(appDirectory, 'data/scenarios.json'), 'utf8'))
+  });
+  checks++;
+  const transfer = (await api('/demo/games?scenario=launch-transfer', 200, { method: 'POST' })).body;
+  const republished = (await api('/demo/catalog-revision', 200, { game: transfer.id, method: 'POST' })).body;
+  assert.equal(republished.revision, 2);
+  assert.deepEqual(republished.cost, { fuel: 8, rations: 4 });
+  const transferCatalog = (await api('/missions', 200, { game: transfer.id })).body;
+  assert.deepEqual(transferCatalog.find(mission => mission.id === 'M01'), republished);
+  assert.deepEqual((await detail(transfer.id, transfer.activeExpedition.id)).cost, { fuel: 6, rations: 2 });
   const main = await newGame();
   const catalog = (await api('/missions', 200, { game: main })).body;
   assert.deepEqual(catalog.map(mission => mission.id), ['M01', 'M02', 'M03']);

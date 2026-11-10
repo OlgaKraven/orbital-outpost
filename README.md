@@ -54,7 +54,7 @@ GitHub Actions запускает сборку и проверку HTTP при �
 
 ## API
 
-Сначала POST /api/demo/games?scenario=briefing, затем передавать возвращённый id в заголовке X-Game-Id. Без scenario создаётся свободная партия. Для атомарной замены используется POST /api/expeditions/{id}/replacements с expectedCatalogRevision. Основной контракт описан в [пошаговом разборе](wwwroot/guide.html#http) и [OpenAPI](wwwroot/openapi.json).
+GET /study/fixtures возвращает исходные JSON из `data/seed.json` и `data/scenarios.json` без создания партии. Для состояния выбранного сценария сначала выполните POST /api/demo/games?scenario=briefing, затем передавайте возвращённый id в заголовке X-Game-Id. Без scenario создаётся свободная партия. Для атомарной замены используется POST /api/expeditions/{id}/replacements с expectedCatalogRevision. [Пример проверки источников](wwwroot/student-guide.html#api-practice) · [Контракт OpenAPI](wwwroot/openapi.json).
 
 ## Запуск на отдельном сервере
 

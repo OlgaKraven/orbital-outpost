@@ -158,6 +158,8 @@ sealed class GameStore(string databasePath, string schemaPath, Seed seed, CaseFi
     public MissionDto ReviseCatalog(Guid playerId) => Write(transaction =>
     {
         RequireGame(transaction, playerId);
+        var current = FindMission(transaction, playerId, fixtures.Revision.Id);
+        if (current.Revision >= fixtures.Revision.Revision) return current;
         ApplyCatalogRevision(transaction, playerId);
         return FindMission(transaction, playerId, fixtures.Revision.Id);
     });
