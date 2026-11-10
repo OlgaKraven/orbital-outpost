@@ -58,3 +58,38 @@ jobs:
           name: orbital-outpost
           path: ${{ runner.temp }}/orbital-outpost/
           if-no-files-found: error
+
+  pages:
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency: github-pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Prepare browser edition
+        shell: bash
+        run: |
+          site="$RUNNER_TEMP/outpost-site"
+          cp -R wwwroot "$site"
+          cp tools/pages-api.js "$site/"
+          sed -i '/<script src="app.js/i\  <script src="pages-api.js" defer></script>' "$site/index.html"
+          sed -i -E "s/(simulator\.js|app\.js|pages-api\.js)(\?v=[^\"]+)?\"/\1?v=${GITHUB_SHA:0:12}\"/g" "$site/index.html"
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/outpost-site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

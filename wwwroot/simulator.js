@@ -81,6 +81,10 @@ function renderSimulator() {
     simLink('Разобрать запрос', 'learn', true));
   else if (screen === 'scenarios') body = simScenarios();
   else if (screen === 'journal') body = simJournal(game);
+  else if (browserDemo && ['compare', 'catalog', 'actions'].includes(screen)) body = simPanel('Проект с SQLite',
+    'Продолжите на сервере', '<p>Для партий с несколькими миссиями запустите полную сборку. Здесь доступны оба варианта E01.</p>',
+    '<a class="button primary" href="https://github.com/OlgaKraven/orbital-outpost#запуск-исходного-проекта">Как запустить проект</a>',
+    simLink('Выбрать вариант E01', 'scenarios'));
   else if (screen === 'compare') body = simComparison(game);
   else if (screen === 'catalog') body = simCatalog(game);
   else if (screen === 'actions') body = simActions(game);
@@ -92,7 +96,8 @@ function renderSimulator() {
   const workspaceLabel = game && !simIsE01(game) && simUsesGame() ? 'Партия' : 'Практика E01';
   main.innerHTML = '<div class="sim-shell"><header class="sim-heading"><p>' + workspaceLabel + '</p>' + scenarioControl + '</header>' +
     '<div id="sim-message" class="sim-status' + (gameSession.failed ? ' sim-status-error' : '') + '" role="status" tabindex="-1">' +
-    (simUsesGame() ? gameSession.busy ? 'Ожидаем ответ сервера…' : esc(gameSession.message) : '') + '</div>' + body + '</div>';
+    (simUsesGame() || gameSession.busy || gameSession.failed ? gameSession.busy
+      ? browserDemo ? 'Выполняем учебную команду…' : 'Ожидаем ответ сервера…' : esc(gameSession.message) : '') + '</div>' + body + '</div>';
   const animation = main.querySelector('.sim-animation');
   animation?.addEventListener('toggle', () => {
     if (!animation.isConnected) return;
@@ -138,7 +143,8 @@ function simOrientation() {
     '<li><strong>Правило</strong><span>Сервер проверяет статус и списывает ресурсы по снимку рейса.</span></li>' +
     '<li><strong>Ответ</strong><span>Код показывает результат. JSON передаёт данные в виде именованных полей.</span></li></ol>' +
     '<div class="sim-code-note"><p><strong>Тело команды запуска</strong> содержит поле <code>action</code> со строковым значением <code>launch</code>.</p>' +
-    simCode('{ "action": "launch" }') + '</div>' + simAnimation(),
+    simCode('{ "action": "launch" }') + '</div>' + simAnimation() +
+    (browserDemo ? '<p class="note">Здесь вы проверяете правило в учебной модели в браузере. В разделе «Собственный API» вы запустите C# и проверите реальные HTTP-запросы.</p>' : ''),
     localFile ? simLink('Разобрать данные', 'data', true) : simButton('Открыть исходные данные E01', 'new', 'e01'));
 }
 
@@ -287,7 +293,7 @@ function simE01(game) {
       explanation + simInventory(game), simButton('Повторить запуск', 'retry', 'launch'), journal);
   } else {
     const checkText = checked
-      ? '<p>Повторный запрос вернул <strong>409 Conflict</strong>. Сервер сохранил статус, запас и историю рейса.</p>'
+      ? '<p>Повторный запрос вернул <strong>409 Conflict</strong>. ' + (browserDemo ? 'Учебная модель сохранила' : 'Сервер сохранил') + ' статус, запас и историю рейса.</p>'
       : '<p>Рейс имеет статус <strong>' + esc(statuses[trip.status] ?? trip.status) + '</strong>. Для проверки двух запусков можно начать свежую партию.</p>';
     const observed = '<div class="sim-result"><p><strong>Физический остаток · ' +
       simPair(game.inventory.onHand) + '</strong></p>' + simEvents(trip) + '</div>';
@@ -336,10 +342,13 @@ function simPicker(name, options, action, submitText, returnLink = true) {
 function simScenarios() {
   const current = simIsE01(gameSession.game) && gameSession.game?.scenarioId === 'briefing' ? 'e01' :
     gameSession.game?.scenarioId ?? 'e01';
+  const available = browserDemo ? scenarios.slice(0, 2) : scenarios;
   return simPanel('Выбор условий', 'Откройте один сценарий',
     '<p>Отметьте нужный набор и нажмите «Открыть сценарий». Откроется отдельная партия с указанными условиями.</p>' +
-    simPicker('Данные для следующего рейса', scenarios.map(item => ({ value: item.id, title: item.title,
-      description: item.description, checked: item.id === current })), 'new', 'Открыть сценарий'));
+    simPicker('Данные для следующего рейса', available.map(item => ({ value: item.id, title: item.title,
+      description: item.description, checked: item.id === current })), 'new', 'Открыть сценарий') +
+    (browserDemo ? '<p class="note">Сценарии замены и нескольких рейсов доступны в полной версии. ' +
+      '<a href="https://github.com/OlgaKraven/orbital-outpost#запуск-исходного-проекта">Как запустить проект</a></p>' : ''));
 }
 
 function simMissionAvailable(game, mission) {
@@ -405,7 +414,8 @@ function simJournal(game) {
     (log.location ? simText('Location: ' + log.location) : '') +
     simCode((log.request ? 'Запрос\n' + JSON.stringify(log.request, null, 2) + '\n\nОтвет\n' : '') +
       JSON.stringify(log.body, null, 2)) + '</details>').join('') : '<p>Ответы появятся после запроса в этой вкладке.</p>';
-  return simPanel('Проверка по данным', 'Журнал и ответы HTTP', selector + events + '<h3>Обмен с сервером</h3>' +
+  return simPanel('Проверка по данным', 'Журнал и ответы HTTP', selector + events +
+    (browserDemo ? '<h3>Ответы учебной модели</h3><p>Коды и JSON здесь воспроизводятся в браузере. Реальный HTTP проверьте на своём запущенном API.</p>' : '<h3>Обмен с сервером</h3>') +
     logList, simLink('К текущему шагу', '', true));
 }
 

@@ -7,11 +7,13 @@ const progress = readLocal('outpost-case-answers', {});
 const worksheets = readLocal('outpost-worksheets', {});
 const drafts = readLocal('outpost-drafts', {});
 const comparison = readLocal('outpost-comparison', {});
-const gameSession = { id: readLocal('outpost-party', null), game: null, missions: [], selected: null,
+const browserDemo = Boolean(window.outpostBrowserApi);
+const partyStorage = browserDemo ? 'sessionStorage' : 'localStorage';
+const gameSession = { id: readLocal('outpost-party', null, partyStorage), game: null, missions: [], selected: null,
   journal: null, logs: [], lastCommand: null, message: '', failed: false, busy: false };
 const simNotebook = readLocal('outpost-e01-notebook', {});
-let simTrack = readLocal('outpost-sim-track', null);
-let simChecked = readLocal('outpost-sim-checked', null);
+let simTrack = readLocal('outpost-sim-track', null, partyStorage);
+let simChecked = readLocal('outpost-sim-checked', null, partyStorage);
 let simGoal = readLocal('outpost-sim-goal', null);
 let selectedStation = 0;
 let view = 'quest';
@@ -223,7 +225,8 @@ async function request(method, path, data) {
   const headers = { Accept: 'application/json' };
   if (gameSession.id) headers['X-Game-Id'] = gameSession.id;
   if (data !== undefined) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, { method, headers, body: data === undefined ? undefined : JSON.stringify(data) });
+  const response = await (browserDemo ? window.outpostBrowserApi(method, path, data, gameSession.id) :
+    fetch(path, { method, headers, body: data === undefined ? undefined : JSON.stringify(data) }));
   const body = await response.json();
   const entry = { method, path, status: response.status, body, request: data, location: response.headers.get('Location') };
   gameSession.logs.unshift(entry);
@@ -257,11 +260,12 @@ async function runGame(action, message) {
       gameSession.id = null;
       gameSession.game = null;
       gameSession.selected = null;
-      saveLocal('outpost-party', null);
+      saveLocal('outpost-party', null, partyStorage);
     }
     gameSession.message = error.status
       ? error.status + ' · ' + error.message
-      : 'Симулятор не получил ответ сервера. Проверьте запуск приложения и повторите действие.';
+      : browserDemo ? 'Учебная модель не загрузилась. Обновите страницу и попробуйте снова.'
+        : 'Симулятор не получил ответ сервера. Проверьте запуск приложения и повторите действие.';
   } finally {
     gameSession.busy = false;
     if (view === 'sim' && (originRoute === location.hash || simUsesGame())) {
@@ -299,8 +303,8 @@ async function gameAction(action, value) {
     gameSession.journal = null;
     gameSession.logs = [gameSession.lastCommand];
     simTrack = { id: newGame.id, exercise: value === 'e01' || value === 'launch-transfer' ? 'e01' : 'party' };
-    saveLocal('outpost-party', newGame.id);
-    saveLocal('outpost-sim-track', simTrack);
+    saveLocal('outpost-party', newGame.id, partyStorage);
+    saveLocal('outpost-sim-track', simTrack, partyStorage);
     await refreshGame();
     location.hash = '#simulator';
   }, 'Начальные данные загружены.');
@@ -332,7 +336,7 @@ async function gameAction(action, value) {
           action === 'replace' && error.code === 'insufficient_supplies')) {
           simChecked = { id: gameSession.game.id, tripId: gameSession.selected.id,
             type: action === 'retry' ? 'repeat' : 'replacement' };
-          saveLocal('outpost-sim-checked', simChecked);
+          saveLocal('outpost-sim-checked', simChecked, partyStorage);
           if (action === 'retry' && simIsE01(gameSession.game)) rememberSimEvidence('repeatLaunch');
           return 'HTTP 409 · состояние после команды совпало с исходным.';
         }
@@ -377,6 +381,7 @@ function exportStudy() {
   }));
   if (Object.keys(simNotebook).length) output.unshift({
     station: 'E01', name: 'Проверка запуска', prediction: simNotebook.prediction ?? '',
+    ...(browserDemo ? { simulator: 'browser-model' } : {}),
     transferPrediction: simNotebook.transferPrediction ?? '',
     studentApiNote: simNotebook.studentApiNote ?? '',
     observations: { catalog73: simNotebook.catalog73 ?? null, catalog84: simNotebook.catalog84 ?? null }
